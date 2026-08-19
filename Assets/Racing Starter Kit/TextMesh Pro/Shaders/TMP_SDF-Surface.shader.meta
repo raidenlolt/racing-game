@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: f7ada0af4f174f0694ca6a487b8f543d
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 169750
+  packageName: Racing Starter Kit FREE
+  packageVersion: 3.0
+  assetPath: Assets/Racing Starter Kit/TextMesh Pro/Shaders/TMP_SDF-Surface.shader
+  uploadId: 873032

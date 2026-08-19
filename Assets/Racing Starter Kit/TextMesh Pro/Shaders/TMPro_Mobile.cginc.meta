@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: c334973cef89a9840b0b0c507e0377ab
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 169750
+  packageName: Racing Starter Kit FREE
+  packageVersion: 3.0
+  assetPath: Assets/Racing Starter Kit/TextMesh Pro/Shaders/TMPro_Mobile.cginc
+  uploadId: 873032
