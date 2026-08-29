@@ -54,15 +54,56 @@ namespace SpinMotion
         public bool Skidding { get; private set; }
         public float BrakeInput { get; private set; }
         public float CurrentSteerAngle{ get { return m_SteerAngle; }}
-        public float CurrentSpeed{ get { return m_Rigidbody.linearVelocity.magnitude*2.23693629f; }}
-        public float MaxSpeed{get { return m_Topspeed; }}
+        // the rigidbody is cached in Start, but this property is read from other components' Update
+        // and LateUpdate as well as from the AI. any of those can run on the frame a car is spawned,
+        // before this car's own Start has happened, so guard rather than make every caller do it
+        public float CurrentSpeed
+        {
+            get { return m_Rigidbody == null ? 0f : m_Rigidbody.linearVelocity.magnitude*2.23693629f; }
+        }
+        public float MaxSpeed{get { return EffectiveTopSpeed; }}
         public float Revs { get; private set; }
         public float AccelInput { get; private set; }
+        /// <summary>
+        /// the four visible wheels, in the order front-left, front-right, rear-left, rear-right.
+        ///
+        /// exposed because which meshes are the wheels is not guessable from the outside: each car
+        /// model names them differently -- Player Car 2's are Paint.007 through Paint.013 -- and only
+        /// this array says which is which. the menu showcase spins them while a car drives into frame.
+        /// </summary>
+        public GameObject[] WheelMeshes { get { return m_WheelMeshes; } }
 
         // wiring with AICarAvoidanceBehaviour:
         [HideInInspector] public int forceSteering = 0;
         [HideInInspector] public float forceSteeringFactor = 0.1f;
         [HideInInspector] public int forceBraking = 0;
+
+        // performance multiplier layers.
+        // AICarAvoidanceBehaviour borrows m_Topspeed and m_FullTorqueOverAllWheels and restores the
+        // values it cached at Awake. anything else that writes those fields races it: whichever system
+        // restores last wins and the other one's baseline is gone for the rest of the race. so nitro
+        // and rubber-banding multiply through here instead of ever touching the base fields
+        [HideInInspector] public float boostSpeedMultiplier = 1f;
+        [HideInInspector] public float boostTorqueMultiplier = 1f;
+        [HideInInspector] public float bandingSpeedMultiplier = 1f;
+        [HideInInspector] public float bandingTorqueMultiplier = 1f;
+
+        /// <summary>top speed after boost and rubber-banding, in the units of m_SpeedType</summary>
+        public float EffectiveTopSpeed
+        {
+            get { return m_Topspeed * boostSpeedMultiplier * bandingSpeedMultiplier; }
+        }
+
+        /// <summary>true while at least one wheel is touching the ground. sampled each Move()</summary>
+        public bool IsGrounded { get; private set; }
+
+        /// <summary>largest absolute sideways slip across the four wheels. drives drift detection</summary>
+        public float MaxSidewaysSlip { get; private set; }
+
+        private float EffectiveTorque
+        {
+            get { return m_CurrentTorque * boostTorqueMultiplier * bandingTorqueMultiplier; }
+        }
 
         // Use this for initialization
         private void Start()
@@ -144,7 +185,9 @@ namespace SpinMotion
                 m_WheelMeshes[i].transform.position = position;
                 m_WheelMeshes[i].transform.rotation = quat;
             }
-            
+
+            SampleWheelState();
+
             //forced values by AICarAvoidanceBehaviour
             if (forceSteering != 0)
                 steering += forceSteering * forceSteeringFactor;
@@ -191,22 +234,44 @@ namespace SpinMotion
         }
 
 
+        /// <summary>
+        /// one pass over the wheels for grounded state and peak sideways slip, so the nitro charger
+        /// can tell drifting from airborne without casting its own rays every physics step
+        /// </summary>
+        private void SampleWheelState()
+        {
+            var grounded = false;
+            var maxSlip = 0f;
+            for (int i = 0; i < 4; i++)
+            {
+                WheelHit hit;
+                if (!m_WheelColliders[i].GetGroundHit(out hit)) continue;
+                grounded = true;
+                var slip = Mathf.Abs(hit.sidewaysSlip);
+                if (slip > maxSlip) maxSlip = slip;
+            }
+            IsGrounded = grounded;
+            MaxSidewaysSlip = maxSlip;
+        }
+
+
         private void CapSpeed()
         {
             float speed = m_Rigidbody.linearVelocity.magnitude;
+            var topSpeed = EffectiveTopSpeed;
             switch (m_SpeedType)
             {
                 case SpeedType.MPH:
 
                     speed *= 2.23693629f;
-                    if (speed > m_Topspeed)
-                        m_Rigidbody.linearVelocity = (m_Topspeed/2.23693629f) * m_Rigidbody.linearVelocity.normalized;
+                    if (speed > topSpeed)
+                        m_Rigidbody.linearVelocity = (topSpeed/2.23693629f) * m_Rigidbody.linearVelocity.normalized;
                     break;
 
                 case SpeedType.KPH:
                     speed *= 3.6f;
-                    if (speed > m_Topspeed)
-                        m_Rigidbody.linearVelocity = (m_Topspeed/3.6f) * m_Rigidbody.linearVelocity.normalized;
+                    if (speed > topSpeed)
+                        m_Rigidbody.linearVelocity = (topSpeed/3.6f) * m_Rigidbody.linearVelocity.normalized;
                     break;
             }
         }
@@ -216,10 +281,11 @@ namespace SpinMotion
         {
 
             float thrustTorque;
+            var driveTorque = EffectiveTorque;
             switch (m_CarDriveType)
             {
                 case CarDriveType.FourWheelDrive:
-                    thrustTorque = accel * (m_CurrentTorque / 4f);
+                    thrustTorque = accel * (driveTorque / 4f);
                     for (int i = 0; i < 4; i++)
                     {
                         m_WheelColliders[i].motorTorque = thrustTorque;
@@ -227,12 +293,12 @@ namespace SpinMotion
                     break;
 
                 case CarDriveType.FrontWheelDrive:
-                    thrustTorque = accel * (m_CurrentTorque / 2f);
+                    thrustTorque = accel * (driveTorque / 2f);
                     m_WheelColliders[0].motorTorque = m_WheelColliders[1].motorTorque = thrustTorque;
                     break;
 
                 case CarDriveType.RearWheelDrive:
-                    thrustTorque = accel * (m_CurrentTorque / 2f);
+                    thrustTorque = accel * (driveTorque / 2f);
                     m_WheelColliders[2].motorTorque = m_WheelColliders[3].motorTorque = thrustTorque;
                     break;
 

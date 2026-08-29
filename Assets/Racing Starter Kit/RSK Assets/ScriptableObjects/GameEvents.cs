@@ -28,6 +28,13 @@ namespace SpinMotion
         public OnClickRestartGameEvent OnClickRestartGameEvent = new();
         public OnClickPlayRaceEvent OnClickPlayRaceEvent = new();
         public OnClickTogglePauseEvent OnClickTogglePauseEvent = new();
+
+        // nitro. only the local player's car raises these, so the HUD and camera can listen without
+        // filtering out the AI cars that run the exact same NitroSystem component
+        public PlayerNitroChangedEvent PlayerNitroChangedEvent = new();
+        public PlayerNitroFiredEvent PlayerNitroFiredEvent = new();
+        public PlayerNitroEndedEvent PlayerNitroEndedEvent = new();
+        public OnClickFireNitroEvent OnClickFireNitroEvent = new();
     }
 
     public class ToggleCarFreezeEvent : UnityEvent<bool> {}
@@ -46,6 +53,13 @@ namespace SpinMotion
     public class RaceFinishedEvent : UnityEvent<RaceFinishType> {}
     public class RestartRaceEvent : UnityEvent {}
     public class RaceTimeoutEvent : UnityEvent {}
+
+    /// <summary>charge 0-1, and whether the gauge is currently in the perfect-nitro red zone</summary>
+    public class PlayerNitroChangedEvent : UnityEvent<float, bool> {}
+    /// <summary>the level that was engaged, and whether the tap landed in the red zone</summary>
+    public class PlayerNitroFiredEvent : UnityEvent<NitroLevel, bool> {}
+    public class PlayerNitroEndedEvent : UnityEvent {}
+    public class OnClickFireNitroEvent : UnityEvent {}
 
     public class OnClickRestartRaceEvent : UnityEvent {}
     public class OnClickRestartGameEvent : UnityEvent {}

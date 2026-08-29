@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 011143c0bfa8de347bf9e4eb5ca793a2, type: 3}
+  m_Name: Car Catalogue
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.CarCatalogue
+  cars:
+  - displayName: METEOR
+    playerPrefab: {fileID: 4956954954255778322, guid: 22dd4fa75671ed0438666a8750b3fb5a,
+      type: 3}
+    aiPrefab: {fileID: 1044535675417305921, guid: 55558c8106155e546a30b9949e504191,
+      type: 3}
+  - displayName: KATANA
+    playerPrefab: {fileID: 4956954954255778322, guid: cc69846c7fd9a0040a87344d827631cf,
+      type: 3}
+    aiPrefab: {fileID: 8170350698037997110, guid: 3c981ef944eeb184482b31d6488b4acc,
+      type: 3}
+  - displayName: TITAN
+    playerPrefab: {fileID: 4956954954255778322, guid: e1a34ffc56a13394da9e4a76497bdead,
+      type: 3}
+    aiPrefab: {fileID: 4549643790205028832, guid: a227280537c0d0f4da729d24f440f913,
+      type: 3}

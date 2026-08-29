@@ -66,6 +66,7 @@ GameObject:
   - component: {fileID: 272608939172405240}
   - component: {fileID: 8886178039279600405}
   - component: {fileID: 7936936192143127346}
+  - component: {fileID: 5766456545909031400}
   m_Layer: 0
   m_Name: FarCamera
   m_TagString: MainCamera
@@ -152,13 +153,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerCar: {fileID: 0}
-  posX: 0
-  posY: 48.2
-  posZ: -140.2
-  rotX: 2.9
+  offset: {x: 0, y: 5.5, z: -13.5}
+  pitch: 8
+  positionSmoothing: 9
+  rotationSmoothing: 7
   rotationThreshold: 0.1
-  cameraStickiness: 49
-  cameraRotationSpeed: 10
+  rigid: 0
+  nitroPullBack: 1.6
+  nitroDrop: 0.25
+  nitroBlendSpeed: 4
+  maxRoll: 6
+  rollSmoothing: 4
+  lookAheadDistance: 8
+  lookAheadLateral: 4
+  airPullBack: 2.5
+  airRise: 1.2
+  airBlendSpeed: 3
 --- !u!81 &8886178039279600405
 AudioListener:
   m_ObjectHideFlags: 0
@@ -211,6 +221,31 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &5766456545909031400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7222514339078544945}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd6c1ae6edd2f8e438abaf5d058fd9bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.SpeedCameraFX
+  gameEvents: {fileID: 11400000, guid: 53a3a1c43dafc4df88b337434e1a6d28, type: 2}
+  baseFieldOfView: 80
+  speedFieldOfViewGain: 12
+  nitroFieldOfViewGain: 14
+  nitroPunch: 8
+  maxFieldOfView: 94
+  fieldOfViewLerpSpeed: 4
+  punchDecaySpeed: 3
+  maxShakeDegrees: 0.6
+  nitroShakeMultiplier: 2.2
+  shakeFrequency: 22
+  postProcessingRoot: {fileID: 0}
+  minimumQualityLevelForPost: 1
 --- !u!1 &8243640206683282112
 GameObject:
   m_ObjectHideFlags: 0
@@ -224,6 +259,7 @@ GameObject:
   - component: {fileID: 430721485706242422}
   - component: {fileID: 8841184274575927916}
   - component: {fileID: 3088205403944915102}
+  - component: {fileID: 1670653913658397533}
   m_Layer: 0
   m_Name: NormalCamera
   m_TagString: MainCamera
@@ -310,13 +346,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerCar: {fileID: 0}
-  posX: 0
-  posY: 26.29
-  posZ: -101.7
-  rotX: 4.35
+  offset: {x: 0, y: 4, z: -9.5}
+  pitch: 6
+  positionSmoothing: 9
+  rotationSmoothing: 7
   rotationThreshold: 0.1
-  cameraStickiness: 49
-  cameraRotationSpeed: 10
+  rigid: 0
+  nitroPullBack: 1.6
+  nitroDrop: 0.25
+  nitroBlendSpeed: 4
+  maxRoll: 6
+  rollSmoothing: 4
+  lookAheadDistance: 8
+  lookAheadLateral: 4
+  airPullBack: 2.5
+  airRise: 1.2
+  airBlendSpeed: 3
 --- !u!81 &8841184274575927916
 AudioListener:
   m_ObjectHideFlags: 0
@@ -369,6 +414,31 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &1670653913658397533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8243640206683282112}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd6c1ae6edd2f8e438abaf5d058fd9bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.SpeedCameraFX
+  gameEvents: {fileID: 11400000, guid: 53a3a1c43dafc4df88b337434e1a6d28, type: 2}
+  baseFieldOfView: 80
+  speedFieldOfViewGain: 12
+  nitroFieldOfViewGain: 14
+  nitroPunch: 8
+  maxFieldOfView: 94
+  fieldOfViewLerpSpeed: 4
+  punchDecaySpeed: 3
+  maxShakeDegrees: 0.6
+  nitroShakeMultiplier: 2.2
+  shakeFrequency: 22
+  postProcessingRoot: {fileID: 0}
+  minimumQualityLevelForPost: 1
 --- !u!1 &9185959108910041650
 GameObject:
   m_ObjectHideFlags: 0
@@ -382,6 +452,7 @@ GameObject:
   - component: {fileID: 8295785381191541864}
   - component: {fileID: 2736963611478710404}
   - component: {fileID: 9134669139582400245}
+  - component: {fileID: 7986817616197337469}
   m_Layer: 0
   m_Name: FPCamera
   m_TagString: MainCamera
@@ -468,13 +539,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerCar: {fileID: 0}
-  posX: 0
-  posY: 37.57
-  posZ: 14.03
-  rotX: 0
+  offset: {x: 0, y: 2.6, z: 2}
+  pitch: 0
+  positionSmoothing: 9
+  rotationSmoothing: 7
   rotationThreshold: 15
-  cameraStickiness: 49
-  cameraRotationSpeed: 10
+  rigid: 1
+  nitroPullBack: 1.6
+  nitroDrop: 0.25
+  nitroBlendSpeed: 4
+  maxRoll: 6
+  rollSmoothing: 4
+  lookAheadDistance: 8
+  lookAheadLateral: 4
+  airPullBack: 2.5
+  airRise: 1.2
+  airBlendSpeed: 3
 --- !u!81 &2736963611478710404
 AudioListener:
   m_ObjectHideFlags: 0
@@ -527,3 +607,28 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &7986817616197337469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9185959108910041650}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd6c1ae6edd2f8e438abaf5d058fd9bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.SpeedCameraFX
+  gameEvents: {fileID: 11400000, guid: 53a3a1c43dafc4df88b337434e1a6d28, type: 2}
+  baseFieldOfView: 80
+  speedFieldOfViewGain: 12
+  nitroFieldOfViewGain: 14
+  nitroPunch: 8
+  maxFieldOfView: 94
+  fieldOfViewLerpSpeed: 4
+  punchDecaySpeed: 3
+  maxShakeDegrees: 0.6
+  nitroShakeMultiplier: 2.2
+  shakeFrequency: 22
+  postProcessingRoot: {fileID: 0}
+  minimumQualityLevelForPost: 1

@@ -26,6 +26,9 @@ namespace SpinMotion
         public GameObject aiWaypointTrackerPrefab;
         public List<Transform> spawnPoints = new();
 
+        [Tooltip("Roster the menu's car selector picks from. When set, the player drives the car chosen there and playerPrefab is only the fallback.")]
+        public CarCatalogue carCatalogue;
+
         [Tooltip("Pick AI cars at random, never repeating one until the whole set has been used. Otherwise cycle through the set in order.")]
         public bool randomizeAiCars = true;
 
@@ -86,7 +89,7 @@ namespace SpinMotion
                 if (i == 0)
                 {
                     // spawn player at the determined index
-                    var player = Instantiate(playerPrefab, spawnPoints[playerSpawnIndex].position, spawnPoints[playerSpawnIndex].rotation);
+                    var player = Instantiate(GetPlayerPrefab(), spawnPoints[playerSpawnIndex].position, spawnPoints[playerSpawnIndex].rotation);
                     spawnedPlayers.Add((player, player.transform.position, player.transform.rotation));
 
                     var checkpointTracker = player.GetComponentInChildren<CheckpointTracker>();
@@ -116,6 +119,21 @@ namespace SpinMotion
                 }
             }
             gameEvents.PlayersCheckpointTrackersAssignedEvent.Invoke(playersCheckpointTrackers);
+        }
+
+        /// <summary>
+        /// the car the player drives. the menu's selection wins when a roster is wired, so a scene's
+        /// own playerPrefab becomes the fallback for tracks that predate the car selector
+        /// </summary>
+        private GameObject GetPlayerPrefab()
+        {
+            if (carCatalogue != null && carCatalogue.Count > 0)
+            {
+                var entry = carCatalogue.Get(RaceData.CarSelected);
+                if (entry != null && entry.playerPrefab != null)
+                    return entry.playerPrefab;
+            }
+            return playerPrefab;
         }
 
         /// <summary>

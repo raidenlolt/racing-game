@@ -14,6 +14,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Racing_Track_Pack/Scenes/Race_Track_01.unity
     guid: c071473cf5a27de43b6aee29342a988b
+  - enabled: 1
+    path: Assets/Racing_Track_Pack/Scenes/Race_Track_02.unity
+    guid: 50166b2fafcde444cb2f0b7f1823380d
+  - enabled: 1
+    path: Assets/Racing_Track_Pack/Scenes/Race_Track_03.unity
+    guid: 1a87cb91e6d0c9249910fe1afb5a35a6
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f,
       type: 2}

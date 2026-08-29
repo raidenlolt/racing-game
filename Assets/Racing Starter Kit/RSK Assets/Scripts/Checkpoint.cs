@@ -17,20 +17,14 @@ namespace SpinMotion
         public void SetCheckpointNumber(int checkpointNumber) { this.checkpointNumber = checkpointNumber; }
 
 
-        private void Update()
-        {
-            if (!raceManager.Item.IsRaceInProgress()) return;
-            if (realTimeRacePositions.Item.CarCheckpointTrackers.Count == 0) return;
-
-            for (int i = 0; i < realTimeRacePositions.Item.CarCheckpointTrackers.Count; i++)
-            {
-                if (realTimeRacePositions.Item.CheckpointScores[i] == checkpointNumber)
-                {
-                    var checkpointDistanceToCarCheckpointTracker = Vector3.Distance(transform.position, realTimeRacePositions.Item.CarCheckpointTrackers[i].transform.position);
-                    realTimeRacePositions.Item.DistanceFromCheckpointToCarTrackers[i] = checkpointDistanceToCarCheckpointTracker;//and we send the information to the ChkManager.cs script (checkpoint manager)
-                    //checkpoint manager will compare the distance, checkpoints passed and laps done of each car of the race to obtain real time positioning
-                }
-            }
-        }
+        // this used to measure, every frame and for every car, the straight line distance from this
+        // checkpoint to the car, and feed it to RealTimeRacePositions as the fine grained part of the
+        // race score. that is no longer how positions are worked out: progress is measured as distance
+        // along the racing line, which is continuous and always increases as a car drives forwards,
+        // whereas distance-from-a-checkpoint shrinks again through any corner that bends back on
+        // itself. nothing reads the value now, so the work is gone rather than left running.
+        //
+        // a checkpoint's job is only to be crossed. CheckpointTracker handles that from its own
+        // OnTriggerEnter, which is what counts laps and keeps a car from skipping half the circuit.
     }
 }

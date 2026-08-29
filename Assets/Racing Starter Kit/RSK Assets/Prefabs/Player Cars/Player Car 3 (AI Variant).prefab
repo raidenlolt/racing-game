@@ -77,10 +77,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   aiCarController: {fileID: 8123992016027769261}
-  raycastDistance: 2
-  smartSteeringRaycastCheckDelay: 2
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 73
+  baseRaycastDistance: 10
+  speedLookaheadFactor: 0.55
   leftRaycastOffset: {x: 0.25, y: 0.25, z: 0}
   rightRaycastOffset: {x: -0.25, y: 0.25, z: 0}
+  steeringStrength: 0.55
 --- !u!65 &1228664464282668337
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -170,6 +174,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player Car 3 (AI Variant)
       objectReference: {fileID: 0}
+    - target: {fileID: 6732008047634597610, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: isPlayer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7345720917679976139, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: engineSoundStyle
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 2293361448037609974, guid: cc69846c7fd9a0040a87344d827631cf, type: 3}
     m_RemovedGameObjects: []
@@ -183,6 +197,18 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: -3859083290024641970}
+    - targetCorrespondingSourceObject: {fileID: 4956954954255778322, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4975032213525589072}
+    - targetCorrespondingSourceObject: {fileID: 4956954954255778322, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7601047922591901767}
+    - targetCorrespondingSourceObject: {fileID: 4956954954255778322, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 44144872683691034}
   m_SourcePrefab: {fileID: 100100000, guid: cc69846c7fd9a0040a87344d827631cf, type: 3}
 --- !u!54 &2658099400443347568 stripped
 Rigidbody:
@@ -226,12 +252,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d963df58504b69045b8d0d746ba6f777, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_CautiousSpeedFactor: 0.5
-  m_CautiousMaxAngle: 20
+  m_CautiousSpeedFactor: 0.72
+  m_CautiousMaxAngle: 55
   m_CautiousMaxDistance: 100
   m_CautiousAngularVelocityFactor: 30
-  m_SteerSensitivity: 0.01
-  m_AccelSensitivity: 1
+  m_SteerSensitivity: 0.045
+  m_AccelSensitivity: 1.4
   m_BrakeSensitivity: 1
   m_LateralWanderDistance: 3
   m_LateralWanderSpeed: 0.2
@@ -242,3 +268,67 @@ MonoBehaviour:
   m_Target: {fileID: 0}
   m_StopWhenTargetReached: 0
   m_ReachTargetThreshold: 2
+--- !u!114 &4975032213525589072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8170350698037997110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57e89a315c2fcd045bcbcbd722730184, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.AIRubberBanding
+  gameEvents: {fileID: 11400000, guid: 53a3a1c43dafc4df88b337434e1a6d28, type: 2}
+  raceManager: {fileID: 11400000, guid: b528ef8dac9d340728eeff3fb05d15cc, type: 2}
+  realTimeRacePositions: {fileID: 11400000, guid: ac4d5670576bd4412bc6b20e952b7af9,
+    type: 2}
+  deadZone: 45
+  maxDistance: 260
+  speedBandMin: 0.97
+  speedBandMax: 1.14
+  torqueBandMin: 0.94
+  torqueBandMax: 1.35
+  speedBandShare: 0.6
+  suppressAfterStartSeconds: 6
+  minimumSpeedForNegativeBand: 18
+  bandLerpSpeed: 1.5
+--- !u!114 &7601047922591901767
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8170350698037997110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 098b70a9fb924034b9ce2042de97ce5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.AINitroDriver
+  raceManager: {fileID: 11400000, guid: b528ef8dac9d340728eeff3fb05d15cc, type: 2}
+  rubberBanding: {fileID: 4975032213525589072}
+  maxSteerFractionToFire: 0.35
+  patienceChargeCeiling: 0.75
+  perfectNitroSkill: 0.7
+  passiveChargePerSecond: 0.09
+  stepUpInterval: 0.45
+  stepUpChance: 0.6
+--- !u!114 &44144872683691034
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8170350698037997110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d180d0690e1bb5d49a3eef8b8519b797, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.AIStuckRecovery
+  raceManager: {fileID: 11400000, guid: b528ef8dac9d340728eeff3fb05d15cc, type: 2}
+  stuckSpeed: 12
+  secondsBeforeNudge: 2.5
+  secondsBeforeRespawn: 7
+  nudgeDuration: 1.2
+  probeDistance: 25
