@@ -46,7 +46,7 @@ namespace SpinMotion
         private float m_SteerAngle;
         private int m_GearNum;
         private float m_GearFactor;
-        private float m_OldRotation;
+        private Vector3 m_OldForward;
         private float m_CurrentTorque;
         private Rigidbody m_Rigidbody;
         private const float k_ReversingThreshold = 0.01f;
@@ -263,14 +263,18 @@ namespace SpinMotion
                     return; // wheels arent on the ground so dont realign the rigidbody velocity
             }
 
-            // this if is needed to avoid gimbal lock problems that will make the car suddenly shift direction
-            if (Mathf.Abs(m_OldRotation - transform.eulerAngles.y) < 10f)
+            // avoid gimbal lock problems on steep curves by using local forward instead of eulerAngles
+            if (m_OldForward != Vector3.zero)
             {
-                var turnadjust = (transform.eulerAngles.y - m_OldRotation) * m_SteerHelper;
-                Quaternion velRotation = Quaternion.AngleAxis(turnadjust, Vector3.up);
-                m_Rigidbody.linearVelocity = velRotation * m_Rigidbody.linearVelocity;
+                float angle = Vector3.SignedAngle(m_OldForward, transform.forward, transform.up);
+                if (Mathf.Abs(angle) < 10f)
+                {
+                    var turnadjust = angle * m_SteerHelper;
+                    Quaternion velRotation = Quaternion.AngleAxis(turnadjust, transform.up);
+                    m_Rigidbody.linearVelocity = velRotation * m_Rigidbody.linearVelocity;
+                }
             }
-            m_OldRotation = transform.eulerAngles.y;
+            m_OldForward = transform.forward;
         }
 
 

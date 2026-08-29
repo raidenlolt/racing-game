@@ -1,0 +1,244 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4554326278222929696
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8934954942346705018}
+  - component: {fileID: 2352129106294830750}
+  - component: {fileID: 5170139275980605229}
+  - component: {fileID: 7763767066778718572}
+  - component: {fileID: 1228664464282668337}
+  m_Layer: 0
+  m_Name: Collider Trigger Behaviours
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8934954942346705018
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4554326278222929696}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 1, z: -0, w: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2.98}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2667688536246741327}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!114 &2352129106294830750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4554326278222929696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19ebe10d3be68aa40b2bf173050757d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameEvents: {fileID: 11400000, guid: 53a3a1c43dafc4df88b337434e1a6d28, type: 2}
+  aiCarController: {fileID: 8123992016027769261}
+  aiCarRigidbody: {fileID: 2658099400443347568}
+  slowSpeedThreshold: 0.2
+  reducedSpeed: 15
+--- !u!114 &5170139275980605229
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4554326278222929696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c1dd8421f64a4fccb22488b06d0ad3a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &7763767066778718572
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4554326278222929696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 403ec9a1b323c47358d0997d22c13d85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  aiCarController: {fileID: 8123992016027769261}
+  raycastDistance: 2
+  smartSteeringRaycastCheckDelay: 2
+  leftRaycastOffset: {x: 0.25, y: 0.25, z: 0}
+  rightRaycastOffset: {x: -0.25, y: 0.25, z: 0}
+--- !u!65 &1228664464282668337
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4554326278222929696}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2, y: 2, z: 2}
+  m_Center: {x: 0, y: 0.304303, z: 1.211109}
+--- !u!1001 &3866427070496910372
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 84634304819287610, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4956954954255778322, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      propertyPath: m_Name
+      value: Player Car 3 (AI Variant)
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 2293361448037609974, guid: cc69846c7fd9a0040a87344d827631cf, type: 3}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      insertIndex: 0
+      addedObject: {fileID: 8934954942346705018}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4956954954255778322, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -3859083290024641970}
+  m_SourcePrefab: {fileID: 100100000, guid: cc69846c7fd9a0040a87344d827631cf, type: 3}
+--- !u!54 &2658099400443347568 stripped
+Rigidbody:
+  m_CorrespondingSourceObject: {fileID: 1246153206815714900, guid: cc69846c7fd9a0040a87344d827631cf,
+    type: 3}
+  m_PrefabInstance: {fileID: 3866427070496910372}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2667688536246741327 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1201834900730299755, guid: cc69846c7fd9a0040a87344d827631cf,
+    type: 3}
+  m_PrefabInstance: {fileID: 3866427070496910372}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8123992016027769261 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4978299879913551241, guid: cc69846c7fd9a0040a87344d827631cf,
+    type: 3}
+  m_PrefabInstance: {fileID: 3866427070496910372}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8170350698037997110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ea65b38d485c374caa584a03f1de571, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &8170350698037997110 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4956954954255778322, guid: cc69846c7fd9a0040a87344d827631cf,
+    type: 3}
+  m_PrefabInstance: {fileID: 3866427070496910372}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &-3859083290024641970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8170350698037997110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d963df58504b69045b8d0d746ba6f777, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_CautiousSpeedFactor: 0.5
+  m_CautiousMaxAngle: 20
+  m_CautiousMaxDistance: 100
+  m_CautiousAngularVelocityFactor: 30
+  m_SteerSensitivity: 0.01
+  m_AccelSensitivity: 1
+  m_BrakeSensitivity: 1
+  m_LateralWanderDistance: 3
+  m_LateralWanderSpeed: 0.2
+  m_AccelWanderAmount: 0.1
+  m_AccelWanderSpeed: 0.1
+  m_BrakeCondition: 1
+  m_Driving: 1
+  m_Target: {fileID: 0}
+  m_StopWhenTargetReached: 0
+  m_ReachTargetThreshold: 2

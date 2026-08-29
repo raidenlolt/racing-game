@@ -1,5 +1,6 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 /// <summary>
 /// This script detects the AI car speed to see if the car it’s stuck so it will start going reverse for 1 second to get back on track
@@ -19,9 +20,12 @@ namespace SpinMotion
 
         private WheelCollider[] allWheelColliders;
         private Coroutine checkReverseCoroutine;
+        private Coroutine reverseCoroutine;
         private float aiCarSpeed;
         private bool checkReverse, startReverse;
-        private float normalSteering, normalTopSpeed;
+        private float normalSteering, normalTopSpeed, normalTorque;
+        private int playerLayer, aiPlayerLayer;
+        private readonly HashSet<Collider> blockersInFront = new(); // cars currently inside the avoidance trigger box
         
         private void Awake()
         {
@@ -35,6 +39,36 @@ namespace SpinMotion
             
             normalSteering = aiCarController.m_MaximumSteerAngle;
             normalTopSpeed = aiCarController.m_Topspeed;
+            normalTorque = aiCarController.m_FullTorqueOverAllWheels;
+
+            playerLayer = LayerMask.NameToLayer("Player");
+            aiPlayerLayer = LayerMask.NameToLayer("AIPlayer");
+        }
+
+        private void OnDisable()
+        {
+            // a reverse can be cut short by a restart or by the car being despawned. restore everything the
+            // reverse coroutine borrowed, otherwise this car drives backwards unable to steer for good
+            RestoreNormalDriving();
+        }
+
+        private void RestoreNormalDriving()
+        {
+            if (aiCarController == null) // the whole car is being destroyed, nothing left to restore
+                return;
+
+            if (reverseCoroutine != null)
+            {
+                StopCoroutine(reverseCoroutine);
+                reverseCoroutine = null;
+            }
+
+            aiCarController.forceBraking = 0;
+            aiCarController.m_FullTorqueOverAllWheels = normalTorque;
+            aiCarController.m_MaximumSteerAngle = normalSteering;
+
+            blockersInFront.Clear();
+            aiCarController.m_Topspeed = normalTopSpeed;
         }
 
         private void OnRaceStarted()
@@ -46,11 +80,13 @@ namespace SpinMotion
         private void OnRestartRace()
         {
             StopCheckReverse();
+            RestoreNormalDriving();
         }
 
         private void OnRaceFinished(RaceFinishType raceFinishType)
         {
             StopCheckReverse();
+            RestoreNormalDriving();
         }
 
         private void StopCheckReverse()
@@ -82,10 +118,12 @@ namespace SpinMotion
             if (startReverse)
             {
                 startReverse = false;
-                aiCarController.m_FullTorqueOverAllWheels *= -1; // reverse enabled
+                aiCarController.m_FullTorqueOverAllWheels = -normalTorque; // reverse enabled
                 aiCarController.m_MaximumSteerAngle = 0; // block turns to back up in reverse straight
-                StartCoroutine(ReverseCoroutine());
+                reverseCoroutine = StartCoroutine(ReverseCoroutine());
             }
+
+            PruneDespawnedBlockers();
         }
 
         private IEnumerator ReverseCoroutine()
@@ -93,19 +131,41 @@ namespace SpinMotion
             aiCarController.forceBraking = -1;// failsafe for glitchy wheel colliders: (prevents getting stalled)
             yield return new WaitForSeconds(1);
             aiCarController.forceBraking = 0;// unapply failsafe after 1s, resume normal reverse coroutine
-            aiCarController.m_FullTorqueOverAllWheels *= -1;
+            aiCarController.m_FullTorqueOverAllWheels = normalTorque;
             // after one second, the car will be able to turn again (we don't want to turn while reversing, go straight backing up)
             yield return new WaitForSeconds(1);
             aiCarController.m_MaximumSteerAngle = normalSteering;
+            reverseCoroutine = null;
             StopCheckReverse();
             checkReverseCoroutine = StartCoroutine(CheckReverseCoroutine());
         }
         
+        private bool IsCarCollider(Collider collider)
+        {
+            int layer = collider.gameObject.layer;
+            return layer == playerLayer || layer == aiPlayerLayer;
+        }
+
+        // a car despawned or was disabled while inside the trigger box, so OnTriggerExit never fired for it.
+        // without this the AI stays capped at reducedSpeed for the rest of the race
+        private void PruneDespawnedBlockers()
+        {
+            if (blockersInFront.Count == 0)
+                return;
+
+            if (blockersInFront.RemoveWhere(c => c == null || !c.gameObject.activeInHierarchy) > 0
+                && blockersInFront.Count == 0)
+            {
+                aiCarController.m_Topspeed = normalTopSpeed;
+            }
+        }
+
         // set "Player" layer on player car colliders prefabs and "AIPlayer" for AI car colliders
         void OnTriggerEnter(Collider collider)
         {
-            if (collider.gameObject.layer == LayerMask.NameToLayer("Player")
-                || collider.gameObject.layer == LayerMask.NameToLayer("AIPlayer"))
+            // count the cars in the box rather than tracking a single one: with two cars in front, the first
+            // one to leave would otherwise restore full top speed while the second is still ahead of us
+            if (IsCarCollider(collider) && blockersInFront.Add(collider))
             {
                 aiCarController.m_Topspeed = reducedSpeed;
             }
@@ -113,8 +173,7 @@ namespace SpinMotion
         
         void OnTriggerExit(Collider collider)
         {
-            if (collider.gameObject.layer == LayerMask.NameToLayer("Player")
-                || collider.gameObject.layer == LayerMask.NameToLayer("AIPlayer"))
+            if (blockersInFront.Remove(collider) && blockersInFront.Count == 0)
             {
                 aiCarController.m_Topspeed = normalTopSpeed;
             }

@@ -1451,8 +1451,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 250734140757518983}
   - {fileID: 8430905638133618354}
@@ -1522,17 +1522,18 @@ MonoBehaviour:
   - {fileID: 2325500656472706216}
   m_CentreOfMassOffset: {x: 0, y: 0, z: 0}
   m_MaximumSteerAngle: 20
-  m_SteerHelper: 0
-  m_TractionControl: 0
-  m_FullTorqueOverAllWheels: 300
-  m_ReverseTorque: 150
+  m_SteerHelper: 1
+  m_TractionControl: 1
+  m_FullTorqueOverAllWheels: 2500
+  m_ReverseTorque: 1000
   m_MaxHandbrakeTorque: 100000000
   m_Downforce: 100
   m_SpeedType: 0
-  m_Topspeed: 50
+  m_Topspeed: 140
   m_RevRangeBoundary: 1
   m_SlipLimit: 0.4
   m_BrakeTorque: 20000
+  m_WaitTimeBeforeFlip: 2.5
   forceSteering: 0
   forceSteeringFactor: 0.1
   forceBraking: 0
@@ -7550,12 +7551,12 @@ PrefabInstance:
     - target: {fileID: 272608939172405240, guid: 3fbd97da976ce44e88ca2059afedfe1d,
         type: 3}
       propertyPath: posY
-      value: 58.2
+      value: 232.8
       objectReference: {fileID: 0}
     - target: {fileID: 272608939172405240, guid: 3fbd97da976ce44e88ca2059afedfe1d,
         type: 3}
       propertyPath: posZ
-      value: -163.5
+      value: -654
       objectReference: {fileID: 0}
     - target: {fileID: 272608939172405240, guid: 3fbd97da976ce44e88ca2059afedfe1d,
         type: 3}

@@ -170,8 +170,11 @@ namespace SpinMotion
                 // work out the local angle towards the target
                 float targetAngle = Mathf.Atan2(localTarget.x, localTarget.z)*Mathf.Rad2Deg;
 
-                // get the amount of steering needed to aim the car towards the target
-                float steer = Mathf.Clamp(targetAngle*m_SteerSensitivity, -1, 1)*Mathf.Sign(m_CarController.CurrentSpeed);
+                // get the amount of steering needed to aim the car towards the target.
+                // CurrentSpeed is a magnitude so it is never negative: use the signed forward speed instead,
+                // otherwise the steering never inverts in reverse and drops to zero when the car is stopped
+                float forwardSpeed = Vector3.Dot(transform.forward, m_Rigidbody.linearVelocity);
+                float steer = Mathf.Clamp(targetAngle*m_SteerSensitivity, -1, 1)*(forwardSpeed < -0.1f ? -1f : 1f);
 
                 // feed input to the car controller.
                 m_CarController.Move(steer, accel, accel, 0f);

@@ -77,10 +77,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   aiCarController: {fileID: 1483835861577561291}
-  raycastDistance: 2
-  smartSteeringRaycastCheckDelay: 2
-  leftRaycastOffset: {x: 0.25, y: 0.25, z: 0}
-  rightRaycastOffset: {x: -0.25, y: 0.25, z: 0}
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 72
+  baseRaycastDistance: 4
+  speedLookaheadFactor: 0.35
+  leftRaycastOffset: {x: -1.2, y: 1.2, z: 2.5}
+  rightRaycastOffset: {x: 1.2, y: 1.2, z: 2.5}
+  steeringStrength: 0.4
 --- !u!65 &5794799031351574139
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -218,7 +222,7 @@ PrefabInstance:
     - target: {fileID: 4978299879913551241, guid: 67f7e9c2d00e44d1a8bae5a09d2bc4ab,
         type: 3}
       propertyPath: m_ReverseTorque
-      value: 150
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 4978299879913551241, guid: 67f7e9c2d00e44d1a8bae5a09d2bc4ab,
         type: 3}
@@ -233,7 +237,7 @@ PrefabInstance:
     - target: {fileID: 4978299879913551241, guid: 67f7e9c2d00e44d1a8bae5a09d2bc4ab,
         type: 3}
       propertyPath: m_FullTorqueOverAllWheels
-      value: 300
+      value: 2500
       objectReference: {fileID: 0}
     - target: {fileID: 5177234837806616919, guid: 67f7e9c2d00e44d1a8bae5a09d2bc4ab,
         type: 3}
@@ -304,18 +308,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d963df58504b69045b8d0d746ba6f777, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_CautiousSpeedFactor: 0.5
+  m_CautiousSpeedFactor: 0.35
   m_CautiousMaxAngle: 20
   m_CautiousMaxDistance: 100
   m_CautiousAngularVelocityFactor: 30
-  m_SteerSensitivity: 0.01
-  m_AccelSensitivity: 1
+  m_SteerSensitivity: 0.05
+  m_AccelSensitivity: 0.08
   m_BrakeSensitivity: 1
   m_LateralWanderDistance: 3
   m_LateralWanderSpeed: 0.2
   m_AccelWanderAmount: 0.1
   m_AccelWanderSpeed: 0.1
-  m_BrakeCondition: 2
+  m_BrakeCondition: 1
   m_Driving: 1
   m_Target: {fileID: 0}
   m_StopWhenTargetReached: 0

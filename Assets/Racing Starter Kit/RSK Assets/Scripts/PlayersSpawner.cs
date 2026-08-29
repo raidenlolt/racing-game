@@ -22,9 +22,12 @@ namespace SpinMotion
     {
         public GameEvents gameEvents;
         public GameObject playerPrefab;
-        public GameObject aiCarPrefab;
+        public List<GameObject> aiCarPrefabs = new();
         public GameObject aiWaypointTrackerPrefab;
         public List<Transform> spawnPoints = new();
+
+        [Tooltip("Pick AI cars at random, never repeating one until the whole set has been used. Otherwise cycle through the set in order.")]
+        public bool randomizeAiCars = true;
 
         [Header("Player Spawn Settings")]
         public PlayerSpawnIndex playerSpawnIndex = PlayerSpawnIndex.First;
@@ -32,12 +35,19 @@ namespace SpinMotion
 
         private List<(GameObject go, Vector3 spawnPos, Quaternion spawnRot)> spawnedPlayers = new();
         private List<CheckpointTracker> playersCheckpointTrackers = new();
+        private List<GameObject> aiCarPrefabPool = new(); // remaining prefabs for the current random pass
+        private int nextAiCarPrefabIndex = 0; // used when randomizeAiCars is off
 
         private void Awake()
         {
             if (spawnPoints.Count == 0)
             {
                 Debug.LogError("No spawn points assigned");
+            }
+
+            if (aiCarPrefabs.Count == 0)
+            {
+                Debug.LogError("No AI car prefabs assigned");
             }
 
             gameEvents.SpawnPlayersEvent.AddListener(OnSpawnPlayers);
@@ -51,6 +61,9 @@ namespace SpinMotion
         {
             int totalSpawns = spawnPoints.Count;
             int aiCount = RaceData.AiBotsSelected;
+
+            aiCarPrefabPool.Clear();
+            nextAiCarPrefabIndex = 0;
 
             // determine player spawn index
             int playerSpawnIndex = 0;
@@ -86,6 +99,9 @@ namespace SpinMotion
                     int aiSpawnIdx = (i <= playerSpawnIndex) ? i - 1 : i; // adjust AI index if it overlaps with player
                     aiSpawnIdx = Mathf.Clamp(aiSpawnIdx, 0, totalSpawns - 1);
 
+                    var aiCarPrefab = GetNextAiCarPrefab();
+                    if (aiCarPrefab == null) { continue; }
+
                     var aiCar = Instantiate(aiCarPrefab, spawnPoints[aiSpawnIdx].position, spawnPoints[aiSpawnIdx].rotation);
                     spawnedPlayers.Add((aiCar, aiCar.transform.position, aiCar.transform.rotation));
 
@@ -100,6 +116,36 @@ namespace SpinMotion
                 }
             }
             gameEvents.PlayersCheckpointTrackersAssignedEvent.Invoke(playersCheckpointTrackers);
+        }
+
+        /// <summary>
+        /// returns the prefab to use for the next AI car, either random (no repeats until the set is
+        /// exhausted) or cycling through the set in order
+        /// </summary>
+        private GameObject GetNextAiCarPrefab()
+        {
+            if (aiCarPrefabs.Count == 0)
+            {
+                Debug.LogError("No AI car prefabs assigned");
+                return null;
+            }
+
+            if (!randomizeAiCars)
+            {
+                var prefab = aiCarPrefabs[nextAiCarPrefabIndex % aiCarPrefabs.Count];
+                nextAiCarPrefabIndex++;
+                return prefab;
+            }
+
+            if (aiCarPrefabPool.Count == 0)
+            {
+                aiCarPrefabPool.AddRange(aiCarPrefabs);
+            }
+
+            int poolIdx = Random.Range(0, aiCarPrefabPool.Count);
+            var randomPrefab = aiCarPrefabPool[poolIdx];
+            aiCarPrefabPool.RemoveAt(poolIdx);
+            return randomPrefab;
         }
 
         private void OnRestartRace()
