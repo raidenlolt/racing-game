@@ -497,10 +497,10 @@ MonoBehaviour:
   - {fileID: 6577096036900423290}
   - {fileID: 4618937023788940426}
   m_WheelMeshes:
-  - {fileID: 2053997447314100252}
   - {fileID: 4535652101284721488}
-  - {fileID: 8736048515341008619}
+  - {fileID: 2053997447314100252}
   - {fileID: 8395409709373391838}
+  - {fileID: 8736048515341008619}
   m_WheelEffects:
   - {fileID: 705064456836929040}
   - {fileID: 6453660703192660023}
@@ -656,7 +656,11 @@ MonoBehaviour:
   aiWaypointSet: {fileID: 11400000, guid: 7c377e497b48242b893e05f3d26ce11d, type: 2}
   raceManager: {fileID: 11400000, guid: b528ef8dac9d340728eeff3fb05d15cc, type: 2}
   fallHeight: -15
-  maxDistanceFromTrack: 120
+  roadNamePrefix: road
+  maxDistanceFromLine: 32
+  secondsOffRoadBeforeReset: 2.5
+  stuckSpeed: 8
+  secondsStuckBeforeReset: 4
   respawnHeight: 2
   cooldown: 2
 --- !u!1 &6608388820665456078

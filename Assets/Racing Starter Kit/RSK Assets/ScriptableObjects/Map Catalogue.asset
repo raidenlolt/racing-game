@@ -15,3 +15,13 @@ MonoBehaviour:
   maps:
   - displayName: COASTAL
     sceneName: Race_Track_01
+    thumbnail: {fileID: 21300000, guid: 39d3da4a977b70b4c85b20510d36de72, type: 3}
+  - displayName: HIGHLAND
+    sceneName: Race_Track_02
+    thumbnail: {fileID: 21300000, guid: 08e91095a79dbe144890142b12dfe977, type: 3}
+  - displayName: CANYON
+    sceneName: Race_Track_03
+    thumbnail: {fileID: 21300000, guid: eca6d673e323743408af16288ef520e0, type: 3}
+  - displayName: SPEEDWAY
+    sceneName: Race_Track_04
+    thumbnail: {fileID: 21300000, guid: 9b635479003968a47925afe293eabd8f, type: 3}

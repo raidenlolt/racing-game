@@ -5,12 +5,9 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/Racing Starter Kit/RSK Assets/Scenes/SampleScene.unity
-    guid: adc28652a668a9646b0352d63f41b808
-  - enabled: 0
-    path: Assets/Racing Starter Kit/RSK Assets/Scenes/SampleScene 1.unity
-    guid: dbf9cbef95645db43a9a156af621c759
+  - enabled: 1
+    path: Assets/Racing_Track_Pack/Scenes/LevelSelect.unity
+    guid: 5dba7f0529005344f9df5c0b569bd528
   - enabled: 1
     path: Assets/Racing_Track_Pack/Scenes/Race_Track_01.unity
     guid: c071473cf5a27de43b6aee29342a988b

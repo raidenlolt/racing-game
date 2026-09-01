@@ -28,3 +28,18 @@ MonoBehaviour:
       type: 3}
     aiPrefab: {fileID: 4549643790205028832, guid: a227280537c0d0f4da729d24f440f913,
       type: 3}
+  - displayName: APEX
+    playerPrefab: {fileID: 4981085146334484045, guid: dec391ad46ef3344faf616342a8cace2,
+      type: 3}
+    aiPrefab: {fileID: 2369331774908312623, guid: c43047e2a687be249ab1fe80dcf9c3e8,
+      type: 3}
+  - displayName: RUMBLE
+    playerPrefab: {fileID: 7096302174626775585, guid: 80c1a69e9119ea2478943ca4e31125a5,
+      type: 3}
+    aiPrefab: {fileID: 2059762560861220262, guid: 1a716d18fa1624d41a5dc3f301ff0a3b,
+      type: 3}
+  - displayName: MAMMOTH
+    playerPrefab: {fileID: 6627166573620393389, guid: c7a75dc843e013e4da69ec4c1ace88d0,
+      type: 3}
+    aiPrefab: {fileID: 3703651913718036692, guid: 95a47e2d8f3355149b995f3bf6044536,
+      type: 3}

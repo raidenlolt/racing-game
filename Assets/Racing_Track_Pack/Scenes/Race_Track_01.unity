@@ -9424,6 +9424,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 352233719}
   m_Mesh: {fileID: 4300000, guid: a020052a502fa5e4fa46e1579ffadf3f, type: 3}
+--- !u!114 &363007815 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7188815666034685087, guid: 37a7917f6eefb480a92679efda268a4e,
+    type: 3}
+  m_PrefabInstance: {fileID: 750757815}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &366036218
 GameObject:
   m_ObjectHideFlags: 0
@@ -17497,6 +17509,11 @@ PrefabInstance:
       propertyPath: m_ActiveFontFeatures.Array.size
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1260670901045258409, guid: 37a7917f6eefb480a92679efda268a4e,
+        type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 3523215359
+      objectReference: {fileID: 0}
     - target: {fileID: 1425483672108686870, guid: 37a7917f6eefb480a92679efda268a4e,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -17546,6 +17563,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2630843202412183840, guid: 37a7917f6eefb480a92679efda268a4e,
+        type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4294957353
       objectReference: {fileID: 0}
     - target: {fileID: 2919692251910386307, guid: 37a7917f6eefb480a92679efda268a4e,
         type: 3}
@@ -17792,6 +17814,11 @@ PrefabInstance:
       propertyPath: m_AnchorMin.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4377718448332128638, guid: 37a7917f6eefb480a92679efda268a4e,
+        type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 3523215359
+      objectReference: {fileID: 0}
     - target: {fileID: 4737099089831832665, guid: 37a7917f6eefb480a92679efda268a4e,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -17980,6 +18007,21 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7261422233756335581, guid: 37a7917f6eefb480a92679efda268a4e,
+        type: 3}
+      propertyPath: buttonUp
+      value: 
+      objectReference: {fileID: 1792328545}
+    - target: {fileID: 7261422233756335581, guid: 37a7917f6eefb480a92679efda268a4e,
+        type: 3}
+      propertyPath: buttonDown
+      value: 
+      objectReference: {fileID: 363007815}
+    - target: {fileID: 7261422233756335581, guid: 37a7917f6eefb480a92679efda268a4e,
+        type: 3}
+      propertyPath: quantityTMP
+      value: 
+      objectReference: {fileID: 1492357143}
     - target: {fileID: 7432476528462967967, guid: 37a7917f6eefb480a92679efda268a4e,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -18040,6 +18082,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8688986135692182120, guid: 37a7917f6eefb480a92679efda268a4e,
+        type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 3523215359
+      objectReference: {fileID: 0}
     - target: {fileID: 9146913048528429047, guid: 37a7917f6eefb480a92679efda268a4e,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -18061,7 +18108,8 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 3037702754119367288, guid: 37a7917f6eefb480a92679efda268a4e, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 37a7917f6eefb480a92679efda268a4e, type: 3}
@@ -23038,7 +23086,7 @@ PrefabInstance:
     - target: {fileID: 7210794939807448447, guid: 36466e2c53ff74d03a7d1e5259108fc1,
         type: 3}
       propertyPath: aiCarPrefabs.Array.size
-      value: 3
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7210794939807448447, guid: 36466e2c53ff74d03a7d1e5259108fc1,
         type: 3}
@@ -23092,6 +23140,24 @@ PrefabInstance:
       propertyPath: 'aiCarPrefabs.Array.data[2]'
       value: 
       objectReference: {fileID: 4549643790205028832, guid: a227280537c0d0f4da729d24f440f913,
+        type: 3}
+    - target: {fileID: 7210794939807448447, guid: 36466e2c53ff74d03a7d1e5259108fc1,
+        type: 3}
+      propertyPath: 'aiCarPrefabs.Array.data[3]'
+      value: 
+      objectReference: {fileID: 2369331774908312623, guid: c43047e2a687be249ab1fe80dcf9c3e8,
+        type: 3}
+    - target: {fileID: 7210794939807448447, guid: 36466e2c53ff74d03a7d1e5259108fc1,
+        type: 3}
+      propertyPath: 'aiCarPrefabs.Array.data[4]'
+      value: 
+      objectReference: {fileID: 2059762560861220262, guid: 1a716d18fa1624d41a5dc3f301ff0a3b,
+        type: 3}
+    - target: {fileID: 7210794939807448447, guid: 36466e2c53ff74d03a7d1e5259108fc1,
+        type: 3}
+      propertyPath: 'aiCarPrefabs.Array.data[5]'
+      value: 
+      objectReference: {fileID: 3703651913718036692, guid: 95a47e2d8f3355149b995f3bf6044536,
         type: 3}
     - target: {fileID: 7210794939807448447, guid: 36466e2c53ff74d03a7d1e5259108fc1,
         type: 3}
@@ -33158,6 +33224,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1491451901}
   m_Mesh: {fileID: 4300008, guid: a020052a502fa5e4fa46e1579ffadf3f, type: 3}
+--- !u!114 &1492357143 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7787606095086757322, guid: 37a7917f6eefb480a92679efda268a4e,
+    type: 3}
+  m_PrefabInstance: {fileID: 750757815}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1500253274
 GameObject:
   m_ObjectHideFlags: 0
@@ -39565,6 +39643,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1790854675}
   m_Mesh: {fileID: 4300000, guid: a020052a502fa5e4fa46e1579ffadf3f, type: 3}
+--- !u!114 &1792328545 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4439453030938424338, guid: 37a7917f6eefb480a92679efda268a4e,
+    type: 3}
+  m_PrefabInstance: {fileID: 750757815}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1795115311
 GameObject:
   m_ObjectHideFlags: 0

@@ -26,6 +26,7 @@ namespace SpinMotion.EditorTools
         private static readonly string[] BaseCars =
         {
             "Player Car 1", "Player Car 2", "Player Car 3", "Player Car 4",
+            "Player Car 5", "Player Car 6", "Player Car 7",
         };
 
         /// <summary>

@@ -33,10 +33,24 @@ namespace SpinMotion.EditorTools
         private const float GridStagger = 4.5f;
         private const float GridSetback = 18f;
 
+        private const string CarCataloguePath =
+            "Assets/Racing Starter Kit/RSK Assets/ScriptableObjects/Car Catalogue.asset";
+
         private static readonly string[] TargetScenes =
         {
             "Assets/Racing_Track_Pack/Scenes/Race_Track_02.unity",
             "Assets/Racing_Track_Pack/Scenes/Race_Track_03.unity",
+            // no modular road pieces of its own, so it carries an authored Racing Line instead
+            "Assets/Racing_Track_Pack/Scenes/Race_Track_04.unity",
+        };
+
+        /// <summary>every playable track, including the ones already wired by hand</summary>
+        private static readonly string[] AllTrackScenes =
+        {
+            "Assets/Racing_Track_Pack/Scenes/Race_Track_01.unity",
+            "Assets/Racing_Track_Pack/Scenes/Race_Track_02.unity",
+            "Assets/Racing_Track_Pack/Scenes/Race_Track_03.unity",
+            "Assets/Racing_Track_Pack/Scenes/Race_Track_04.unity",
         };
 
         [MenuItem("Tools/Racing/Wire Up Unwired Tracks")]
@@ -106,10 +120,26 @@ namespace SpinMotion.EditorTools
 
         /// <summary>
         /// the modular road pieces are laid end to end around a closed circuit, so walking them
-        /// nearest-neighbour from one extreme recovers the loop in order
+        /// nearest-neighbour from one extreme recovers the loop in order.
+        ///
+        /// not every track is built that way. a scene whose drivable surface is one paved area
+        /// rather than a ribbon of road pieces has no loop to recover, so it can state its route
+        /// explicitly with a "Racing Line" object whose children are the loop in sibling order.
+        /// when one is present it wins, which also gives any track a way to override a derived
+        /// line by hand without touching this tool
         /// </summary>
         private static List<Vector3> BuildRacingLine()
         {
+            var authored = Object.FindObjectsByType<Transform>(FindObjectsSortMode.None)
+                .FirstOrDefault(t => t.name == "Racing Line");
+            if (authored != null && authored.childCount >= 8)
+            {
+                var authoredPoints = new List<Vector3>();
+                foreach (Transform point in authored) authoredPoints.Add(point.position);
+                Debug.Log("[TrackWiring] using the authored Racing Line, " + authoredPoints.Count + " points");
+                return authoredPoints;
+            }
+
             var pieces = Object.FindObjectsByType<Transform>(FindObjectsSortMode.None)
                 .Where(t => RoadPrefixes.Any(p => t.name.StartsWith(p, System.StringComparison.OrdinalIgnoreCase)))
                 .Select(t => t.position)
@@ -247,21 +277,68 @@ namespace SpinMotion.EditorTools
             // the shipped prefab still carries the pre-rename single aiCarPrefab field, so its
             // aiCarPrefabs list deserialises empty and no bots would spawn. populate it explicitly
             spawner.spawnPoints = points.ToList();
-            spawner.aiCarPrefabs = new List<GameObject>
-            {
-                LoadCar("Player Car 1 (AI Variant)"),
-                LoadCar("Player Car 2 (AI Variant)"),
-                LoadCar("Player Car 3 (AI Variant)"),
-                LoadCar("Player Car 4 (AI Variant)"),
-            }.Where(c => c != null).ToList();
 
-            if (spawner.playerPrefab == null)
-                spawner.playerPrefab = LoadCar("Player Car 1");
+            ApplyRoster(spawner);
             if (spawner.aiWaypointTrackerPrefab == null)
                 spawner.aiWaypointTrackerPrefab =
                     AssetDatabase.LoadAssetAtPath<GameObject>(Prefabs + "AI Car Waypoint Tracker.prefab");
 
             RecordOverrides(spawner);
+        }
+
+        /// <summary>
+        /// points a spawner's bot roster at the Car Catalogue.
+        ///
+        /// the list used to be written out car by car here, which meant every car added to the game
+        /// needed a second edit in this file and a re-wire of every track before the bots could
+        /// drive it. reading the catalogue instead makes the roster follow the menu by construction
+        /// </summary>
+        private static void ApplyRoster(PlayersSpawner spawner)
+        {
+            var catalogue = AssetDatabase.LoadAssetAtPath<CarCatalogue>(CarCataloguePath);
+
+            spawner.aiCarPrefabs = catalogue != null
+                ? catalogue.cars.Where(c => c != null && c.aiPrefab != null).Select(c => c.aiPrefab).ToList()
+                : new List<GameObject>();
+
+            if (spawner.aiCarPrefabs.Count == 0)
+                Debug.LogWarning("[TrackWiring] no AI cars in the catalogue, the grid will be empty");
+
+            // the menu's selector overrides this per race; it only matters entering a track directly
+            if (spawner.carCatalogue == null) spawner.carCatalogue = catalogue;
+            if (spawner.playerPrefab == null && catalogue != null && catalogue.Count > 0)
+                spawner.playerPrefab = catalogue.Get(0).playerPrefab;
+        }
+
+        /// <summary>
+        /// re-reads the roster onto every track's spawner without touching anything else it owns.
+        /// wiring a track is a one-shot that refuses to run twice so hand edits survive, but the
+        /// roster has to be refreshed whenever the car line-up changes, so it gets its own pass
+        /// </summary>
+        [MenuItem("Tools/Racing/Refresh Bot Rosters On All Tracks")]
+        public static void RefreshRosters()
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+
+            foreach (var scenePath in AllTrackScenes)
+            {
+                var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                var spawner = Object.FindFirstObjectByType<PlayersSpawner>();
+                if (spawner == null)
+                {
+                    Debug.LogWarning("[TrackWiring] " + scene.name + " has no PlayersSpawner, skipping");
+                    continue;
+                }
+
+                ApplyRoster(spawner);
+                RecordOverrides(spawner);
+                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.SaveScene(scene);
+                Debug.Log("[TrackWiring] " + scene.name + " bot roster: " + spawner.aiCarPrefabs.Count + " cars");
+            }
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("[TrackWiring] rosters refreshed");
         }
 
         private static void PlaceMenuCamera(List<Vector3> line)

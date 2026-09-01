@@ -65,7 +65,8 @@ namespace SpinMotion.EditorTools
             finally { PrefabUtility.UnloadPrefabContents(root); }
 
             // and the component that depended on it, or the car paints itself transparent black
-            foreach (var name in new[] { "Player Car 1", "Player Car 2", "Player Car 3", "Player Car 4" })
+            foreach (var name in new[] { "Player Car 1", "Player Car 2", "Player Car 3", "Player Car 4",
+                                          "Player Car 5", "Player Car 6", "Player Car 7" })
             {
                 var path = Cars + name + ".prefab";
                 var car = PrefabUtility.LoadPrefabContents(path);
@@ -84,7 +85,8 @@ namespace SpinMotion.EditorTools
 
         private static void TuneAi()
         {
-            foreach (var name in new[] { "Player Car 1", "Player Car 2", "Player Car 3", "Player Car 4" })
+            foreach (var name in new[] { "Player Car 1", "Player Car 2", "Player Car 3", "Player Car 4",
+                                          "Player Car 5", "Player Car 6", "Player Car 7" })
             {
                 var path = Cars + name + " (AI Variant).prefab";
                 var root = PrefabUtility.LoadPrefabContents(path);

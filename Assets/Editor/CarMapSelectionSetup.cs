@@ -23,9 +23,14 @@ namespace SpinMotion.EditorTools
         private const string GuiPrefab = "Assets/Racing Starter Kit/RSK Assets/Prefabs/Managers and Systems/GUI.prefab";
 
         /// <summary>
-        /// distinct driving characters for the four cars, which shipped identical at 140/2500/20.
+        /// distinct driving characters for the cars, which shipped identical at 140/2500/20.
         /// the spread is centred on those baselines so the field stays roughly as fast overall, and
-        /// each car trades something for what it gains rather than one being strictly best
+        /// each car trades something for what it gains rather than one being strictly best.
+        ///
+        /// the later three sit on the same trade line the first four established, roughly
+        /// torque = 2950 - (topSpeed - 132) * 20 and steer = 25 - (topSpeed - 132) * 0.27, so a car
+        /// that gains top end pays for it in launch and turn-in. APEX is the extreme of that line
+        /// (fastest, worst off the line, worst through a corner) and RUMBLE the other end
         /// </summary>
         private class Profile
         {
@@ -39,6 +44,9 @@ namespace SpinMotion.EditorTools
             new Profile { Prefab = "Player Car 2", Name = "METEOR",  TopSpeed = 162f, Torque = 2350f, Steer = 17f },
             new Profile { Prefab = "Player Car 3", Name = "KATANA",  TopSpeed = 132f, Torque = 2950f, Steer = 25f },
             new Profile { Prefab = "Player Car 4", Name = "TITAN",   TopSpeed = 150f, Torque = 2700f, Steer = 19f },
+            new Profile { Prefab = "Player Car 5", Name = "APEX",    TopSpeed = 170f, Torque = 2200f, Steer = 15f },
+            new Profile { Prefab = "Player Car 6", Name = "RUMBLE",  TopSpeed = 136f, Torque = 2880f, Steer = 24f },
+            new Profile { Prefab = "Player Car 7", Name = "MAMMOTH", TopSpeed = 142f, Torque = 2900f, Steer = 18f },
         };
 
         private static readonly string[][] Maps =
@@ -46,6 +54,7 @@ namespace SpinMotion.EditorTools
             new[] { "Race_Track_01", "COASTAL" },
             new[] { "Race_Track_02", "HIGHLAND" },
             new[] { "Race_Track_03", "CANYON" },
+            new[] { "Race_Track_04", "SPEEDWAY" },
         };
 
         [MenuItem("Tools/Racing/Set Up Car And Map Selection")]

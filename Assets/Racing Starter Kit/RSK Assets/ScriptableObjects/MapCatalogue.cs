@@ -9,6 +9,8 @@ namespace SpinMotion
         public string displayName = "Track";
         [Tooltip("Scene name exactly as it appears in Build Settings")]
         public string sceneName;
+        [Tooltip("Aerial shot of the circuit, shown on the track select card")]
+        public Sprite thumbnail;
     }
 
     /// <summary>
