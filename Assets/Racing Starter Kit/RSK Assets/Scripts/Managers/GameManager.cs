@@ -23,7 +23,7 @@ namespace SpinMotion
 
         private void OnRestartGame()
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            SceneManager.LoadScene(0);
         }
 
         private void Update()

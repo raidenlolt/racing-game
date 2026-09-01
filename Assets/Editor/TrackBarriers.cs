@@ -236,6 +236,10 @@ namespace SpinMotion.EditorTools
             // seed distance instead of at the measured road edge. lend the road colliders for the
             // duration of the build and take them away again, so gameplay physics is untouched.
             var borrowed = LendRoadColliders();
+            // the overlap and raycast probes below read the physics scene, which does not see a
+            // collider added this same frame until the transforms are pushed through
+            Physics.SyncTransforms();
+            wallsDropped = 0;
             int made;
             try
             {
@@ -260,7 +264,8 @@ namespace SpinMotion.EditorTools
             {
                 foreach (var c in borrowed) if (c != null) Object.DestroyImmediate(c);
             }
-            Debug.Log("[Walls] measured against " + borrowed.Count + " temporary road collider(s)");
+            Debug.Log("[Walls] measured against " + borrowed.Count + " temporary road collider(s); " +
+                      wallsDropped + " segment(s) dropped for sitting on the tarmac");
             return made;
         }
 
@@ -284,13 +289,23 @@ namespace SpinMotion.EditorTools
                 position.y = mid.y;
             }
 
+            var rotation = Quaternion.LookRotation(fwd, Vector3.up);
+            var size = new Vector3(WallThickness, WallHeight, length + WallCornerPad * 2f);
+
+            // never leave a wall standing on the racing surface, whatever the probe above measured
+            if (!ClearOfRoad(position, rotation, size, right * side, out position))
+            {
+                wallsDropped++;
+                return 0;
+            }
+
             var go = new GameObject(side > 0 ? "Wall R" : "Wall L");
             go.transform.SetParent(parent, false);
             // bottom sits at mid.y - WallSink, i.e. under the tarmac, so there is no gap to wedge into
             go.transform.position = position + Vector3.up * (WallHeight * 0.5f - WallSink);
-            go.transform.rotation = Quaternion.LookRotation(fwd, Vector3.up);
+            go.transform.rotation = rotation;
             var box = go.AddComponent<BoxCollider>();
-            box.size = new Vector3(WallThickness, WallHeight, length + WallCornerPad * 2f);
+            box.size = size;
             return 1;
         }
 
@@ -360,26 +375,133 @@ namespace SpinMotion.EditorTools
             return result;
         }
 
+        /// <summary>seed distance used when a probe finds no road at all in a direction</summary>
+        private const float MinRoadEdge = 8f;
+        /// <summary>metres of missing road tolerated before the scan calls it the edge, so a seam between two tiles is not mistaken for one</summary>
+        private const float GapTolerance = 4f;
+        private const float RoadProbeUp = 20f;
+        private const float RoadProbeDown = 25f;
+
         /// <summary>
-        /// how far the road actually extends in a direction, by stepping outwards until the ground
-        /// below stops being a road piece
+        /// how far the road actually extends in a direction, by stepping outwards and following the
+        /// road surface up and down as it goes.
+        ///
+        /// the previous version probed at one fixed height -- 15 m above the segment midpoint,
+        /// looking 35 m down -- and stopped at the very first step that found nothing. that holds on
+        /// a flat circuit and fails on a climbing one: twenty metres to the side of a waypoint the
+        /// tarmac on Highland and Canyon can sit well outside that window, so the scan ended metres
+        /// early and the wall was then built standing on the racing surface. measured before this
+        /// change, 108 of Highland's 242 walls and 74 of Canyon's 180 physically intersected the
+        /// road mesh, against 38 of 194 on the flat Coastal circuit.
+        ///
+        /// it now carries the last known road height outwards with it, keeps a wide window either
+        /// side of that, and tolerates a short gap before deciding it has found the edge.
         /// </summary>
         private static float RoadEdgeDistance(Vector3 from, Vector3 direction)
         {
-            var last = 8f;
-            for (var d = 8f; d <= 55f; d += 1.5f)
+            var step = direction;
+            step.y = 0f;
+            if (step.sqrMagnitude < 0.0001f) return MinRoadEdge;
+            step.Normalize();
+
+            var surfaceY = from.y;
+            var last = 0f;
+            var gap = 0f;
+
+            for (var d = 1f; d <= 60f; d += 1f)
             {
-                if (!IsOverRoad(from + direction.normalized * d)) break;
-                last = d;
+                var probe = from + step * d;
+                probe.y = surfaceY;
+
+                float hitY;
+                if (RoadSurfaceHeight(probe, out hitY))
+                {
+                    surfaceY = hitY;
+                    last = d;
+                    gap = 0f;
+                }
+                else
+                {
+                    gap += 1f;
+                    if (gap >= GapTolerance) break;
+                }
             }
-            return last;
+            return Mathf.Max(last, MinRoadEdge);
+        }
+
+        /// <summary>
+        /// the height of the road surface under or over a point, within a generous window.
+        ///
+        /// where a circuit stacks over itself the hit nearest the point's own height is the piece
+        /// this probe is walking along, not simply the highest one the ray passes through
+        /// </summary>
+        private static bool RoadSurfaceHeight(Vector3 p, out float y)
+        {
+            y = 0f;
+            var found = false;
+            var nearest = float.MaxValue;
+
+            var hits = Physics.RaycastAll(p + Vector3.up * RoadProbeUp, Vector3.down,
+                                          RoadProbeUp + RoadProbeDown, ~0, QueryTriggerInteraction.Ignore);
+            foreach (var h in hits)
+            {
+                if (!h.collider.gameObject.name.ToLower().StartsWith("road")) continue;
+                var gap = Mathf.Abs(h.point.y - p.y);
+                if (found && gap >= nearest) continue;
+                y = h.point.y;
+                nearest = gap;
+                found = true;
+            }
+            return found;
         }
 
         private static bool IsOverRoad(Vector3 p)
         {
-            var hits = Physics.RaycastAll(p + Vector3.up * 15f, Vector3.down, 35f);
-            foreach (var h in hits)
-                if (h.collider.gameObject.name.ToLower().StartsWith("road")) return true;
+            float y;
+            return RoadSurfaceHeight(p, out y);
+        }
+
+        /// <summary>how far a wall may be nudged outwards to get off the tarmac before it is abandoned</summary>
+        private const float MaxRoadPush = 30f;
+
+        /// <summary>walls dropped in the current build because they could not be got off the road</summary>
+        private static int wallsDropped;
+
+        /// <summary>
+        /// the last word on wall placement: a wall must never stand on the racing surface.
+        ///
+        /// the offset above is a measurement and measurements can be wrong, so the finished box is
+        /// tested against the road colliders themselves and pushed outwards until it is clear. a
+        /// wall that cannot be cleared is dropped rather than shipped -- a gap in the perimeter is
+        /// caught by the safety floor and by CarRespawn, whereas an invisible wall across the tarmac
+        /// is exactly the "stuck in a random collider" the fix exists to remove.
+        /// </summary>
+        private static bool ClearOfRoad(Vector3 start, Quaternion rotation, Vector3 size, Vector3 outward,
+                                        out Vector3 result)
+        {
+            result = start;
+
+            outward.y = 0f;
+            if (outward.sqrMagnitude < 0.0001f) outward = Vector3.right;
+            outward.Normalize();
+
+            var half = size * 0.5f;
+            for (var push = 0f; push <= MaxRoadPush; push += 1f)
+            {
+                var candidate = start + outward * push;
+                var centre = candidate + Vector3.up * (WallHeight * 0.5f - WallSink);
+                if (TouchesRoad(centre, half, rotation)) continue;
+
+                result = candidate;
+                return true;
+            }
+            return false;
+        }
+
+        private static bool TouchesRoad(Vector3 centre, Vector3 half, Quaternion rotation)
+        {
+            foreach (var c in Physics.OverlapBox(centre, half, rotation, ~0, QueryTriggerInteraction.Ignore))
+                if (c.gameObject.name.ToLower().StartsWith("road")) return true;
             return false;
         }
 

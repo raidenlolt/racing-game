@@ -65,8 +65,20 @@ namespace SpinMotion.EditorTools
         /// the 0.30 it is worth today, so the change is to how nitro is earned rather than how much.
         /// </summary>
         private const float ChargePerBottle = 0.25f;
-        /// <summary>high enough to read against the road, low enough that a car body passes through it</summary>
+        /// <summary>
+        /// high enough to read against the road, low enough that a car body passes through it.
+        ///
+        /// this is measured up from the road surface found beneath the site, not from the waypoint.
+        /// the waypoints sit a fixed distance above a road that climbs on Highland and Canyon, so
+        /// taking their height as the ground left bottles floating or buried.
+        /// </summary>
         private const float Height = 1.5f;
+        /// <summary>
+        /// how much road a bottle needs either side of it before the spot counts as on the track.
+        /// the visual is 3.6 m across, so a bottle seated at the very edge of the tarmac hangs half
+        /// of itself over the verge.
+        /// </summary>
+        private const float EdgeInset = 3f;
         private const float TriggerRadius = 3.4f;
         /// <summary>
         /// sized to be picked out at racing speed on a phone. at 2.6m the bottle was legible standing
@@ -138,7 +150,14 @@ namespace SpinMotion.EditorTools
             var visibility = container.AddComponent<NitroPickupsVisibility>();
             visibility.gameEvents = FindAsset<GameEvents>();
 
+            // the bottles are seated on the road itself, so the road has to be solid while they are
+            // placed. Race_Track_01 to 03 ship road colliders, but lend them where they are missing
+            // and take them away again so gameplay physics is untouched
+            var borrowed = LendRoadColliders();
+            Physics.SyncTransforms();
+
             var placed = 0;
+            var skipped = 0;
             var lapLength = 0f;
             for (int i = 0; i < line.Count; i++) lapLength += Vector3.Distance(line[i], line[(i + 1) % line.Count]);
 
@@ -164,22 +183,112 @@ namespace SpinMotion.EditorTools
                 var right = Vector3.Cross(Vector3.up, forward).normalized;
                 // centred on the racing line: the row already spans the road, so shifting the whole
                 // row sideways as well would only push its outer bottle onto the grass
-                var centre = a + forward * alongSegment + Vector3.up * Height;
+                var centre = a + forward * alongSegment;
 
                 // a row of three ACROSS the road: left lane, racing line, right lane
                 for (int n = 0; n < PerSite; n++)
                 {
-                    var offset = (n - (PerSite - 1) * 0.5f) * RowSpacing;
-                    Build(container.transform, centre + right * offset, material, raceManager, placed);
+                    var lateral = (n - (PerSite - 1) * 0.5f) * RowSpacing;
+                    Vector3 seat;
+                    if (!SeatOnRoad(centre, right, lateral, out seat))
+                    {
+                        skipped++;
+                        continue;
+                    }
+                    Build(container.transform, seat, material, raceManager, placed);
                     placed++;
                 }
                 alongSegment += Spacing;
                 travelled += Spacing;
             }
 
+            foreach (var c in borrowed) if (c != null) Object.DestroyImmediate(c);
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log("[Nitro] " + scene.name + ": " + placed + " bottle(s) over a " + lapLength.ToString("F0") + " m lap");
+            Debug.Log("[Nitro] " + scene.name + ": " + placed + " bottle(s) over a " + lapLength.ToString("F0") +
+                      " m lap; " + skipped + " skipped for having no road under them");
+        }
+
+        /// <summary>
+        /// finds where a bottle in this lane should actually sit, or reports that it has nowhere to go.
+        ///
+        /// two separate things were wrong with taking the lane offset on trust. the row is laid out
+        /// across the straight chord between two waypoints, and those are 39 m to 136 m apart, so
+        /// through a corner the chord cuts inside the bend and a 10 m lane offset lands on scenery.
+        /// and the height was the waypoint's own y plus a constant, which is the road's height only
+        /// on a flat circuit. measured before this change, 8 of Highland's 24 bottles and 5 of
+        /// Canyon's 18 had no road beneath them at all.
+        ///
+        /// the lane is now pulled in towards the racing line a metre at a time until it finds tarmac
+        /// with room either side, and the bottle is seated on that surface rather than on the
+        /// waypoint's height. a site with no road anywhere across it places nothing.
+        /// </summary>
+        private static bool SeatOnRoad(Vector3 centre, Vector3 right, float lateral, out Vector3 seat)
+        {
+            seat = Vector3.zero;
+            var sign = lateral < 0f ? -1f : 1f;
+
+            for (var d = Mathf.Abs(lateral); d >= 0f; d -= 1f)
+            {
+                var candidate = centre + right * (sign * d);
+
+                float surface;
+                if (!RoadSurfaceHeight(candidate, centre.y, out surface)) continue;
+
+                float ignored;
+                if (!RoadSurfaceHeight(candidate + right * EdgeInset, centre.y, out ignored)) continue;
+                if (!RoadSurfaceHeight(candidate - right * EdgeInset, centre.y, out ignored)) continue;
+
+                candidate.y = surface + Height;
+                seat = candidate;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// the height of the road under a point. where the circuit stacks over itself the hit nearest
+        /// the racing line's own height is the right one, not simply the highest
+        /// </summary>
+        private static bool RoadSurfaceHeight(Vector3 p, float referenceY, out float y)
+        {
+            y = 0f;
+            var found = false;
+            var nearest = float.MaxValue;
+
+            var origin = new Vector3(p.x, referenceY + 40f, p.z);
+            foreach (var h in Physics.RaycastAll(origin, Vector3.down, 120f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (!h.collider.gameObject.name.ToLower().StartsWith("road")) continue;
+                var gap = Mathf.Abs(h.point.y - referenceY);
+                if (found && gap >= nearest) continue;
+                y = h.point.y;
+                nearest = gap;
+                found = true;
+            }
+            return found;
+        }
+
+        /// <summary>
+        /// temporarily gives every road piece a mesh collider, returning the ones it created so the
+        /// caller can remove them again. only pieces that have no collider already are touched.
+        /// </summary>
+        private static List<Collider> LendRoadColliders()
+        {
+            var made = new List<Collider>();
+            foreach (var filter in Object.FindObjectsByType<MeshFilter>(FindObjectsSortMode.None))
+            {
+                if (!filter.gameObject.name.ToLower().StartsWith("road")) continue;
+                if (filter.sharedMesh == null) continue;
+                if (filter.GetComponent<Collider>() != null) continue;
+
+                var mc = filter.gameObject.AddComponent<MeshCollider>();
+                mc.sharedMesh = filter.sharedMesh;
+                mc.convex = false;
+                made.Add(mc);
+            }
+            return made;
         }
 
         private static void Build(Transform parent, Vector3 position, Material material,

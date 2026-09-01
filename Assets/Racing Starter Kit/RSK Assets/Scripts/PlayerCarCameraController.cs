@@ -15,6 +15,12 @@ namespace SpinMotion
     /// stickiness of 49 a posZ of -140 actually meant 2.9 metres behind the car. touching the
     /// smoothing silently re-framed every camera. the offsets below are the decoded equivalents and
     /// now mean what they say.
+    ///
+    /// the heading the shot is built around is damped and bounded rather than read raw off the
+    /// rigidbody -- see Heading(). taking it raw is what made the camera swing about on a twisty
+    /// circuit: the chase cameras sit 9.5 m and 13.5 m back, so every wobble in the velocity vector
+    /// was multiplied into metres of sideways camera travel, and it was fighting an aim point that
+    /// swung the other way on raw steering input.
     /// </summary>
     public class PlayerCarCameraController : MonoBehaviour
     {
@@ -37,6 +43,16 @@ namespace SpinMotion
         [Tooltip("Lock to the car body and skip the velocity swing, roll and pull-back. For first person views, where that motion is unpleasant.")]
         public bool rigid;
 
+        [Header("Heading")]
+        [Tooltip("How much the shot follows the direction of travel rather than the car's nose. 0 sits square behind the car, 1 follows velocity outright.")]
+        [Range(0f, 1f)] public float velocityInfluence = 0.75f;
+        [Tooltip("Furthest the frame may swing off the car's nose, in degrees. A big slide slews the shot, but only this far.")]
+        public float maxHeadingOffset = 22f;
+        [Tooltip("How quickly the heading itself settles. This damps the target the camera is chasing, not just the camera.")]
+        public float headingSmoothing = 6f;
+        [Tooltip("Speed in m/s at which the direction of travel is trusted in full. Below it the car's nose is blended back in, so a crawling car has no jitter and no snap.")]
+        public float headingSpeedRange = 9f;
+
         [Header("Nitro")]
         public float nitroPullBack = 1.6f;
         public float nitroDrop = 0.25f;
@@ -53,6 +69,10 @@ namespace SpinMotion
         public float lookAheadDistance = 8f;
         [Tooltip("How far the aim point swings towards the inside of a turn, in metres")]
         public float lookAheadLateral = 4f;
+        [Tooltip("How quickly the aim follows the steering. Steering input is a hard step on a touch button, so taken raw it snaps the aim across the moment a button is pressed or released.")]
+        public float steerSmoothing = 3.5f;
+        [Tooltip("Hard ceiling on how far the aim may swing off the heading, in degrees. This bounds the swing whatever lookAheadLateral is set to.")]
+        public float maxAimYaw = 12f;
 
         [Header("Air")]
         public float airPullBack = 2.5f;
@@ -68,11 +88,21 @@ namespace SpinMotion
         private float airBlend;
         private float roll;
 
+        /// <summary>the damped heading, as a yaw in degrees. see Heading()</summary>
+        private float headingYaw;
+        private bool headingStarted;
+        /// <summary>steering input, damped, so the aim does not jump when a button goes down</summary>
+        private float steerSmoothed;
+
         private void Start()
         {
             Resolve();
             if (car != null)
+            {
+                headingYaw = car.eulerAngles.y;
+                headingStarted = true;
                 transform.position = car.position + car.rotation * offset;
+            }
         }
 
         private void Resolve()
@@ -95,8 +125,9 @@ namespace SpinMotion
             var dt = Time.deltaTime;
             if (dt <= 0f) return;
 
-            var heading = Heading();
+            var heading = Heading(dt);
             UpdateBlends(dt);
+            steerSmoothed = Mathf.Lerp(steerSmoothed, SteerFraction(), Blend(steerSmoothing, dt));
 
             var framing = offset;
             if (!rigid)
@@ -131,19 +162,69 @@ namespace SpinMotion
 
         /// <summary>
         /// the direction the shot is built around. following velocity rather than the car's nose is
-        /// what makes a drift read: the car rotates inside a frame that keeps pointing down the road
+        /// what makes a drift read: the car rotates inside a frame that keeps pointing down the road.
+        ///
+        /// it is taken as a damped, bounded fraction of the travel direction rather than the travel
+        /// direction itself, because the raw vector is a poor camera target in three separate ways.
+        /// reversing points it at the back of the car, so the shot whipped round to the front. a car
+        /// creeping at the shipped 0.1 m/s threshold has a velocity direction that is mostly noise,
+        /// and crossing that threshold snapped the frame. and on a twisty circuit the slip angle
+        /// swings several degrees each way through every corner entry, which at 13.5 m behind the car
+        /// is metres of sideways camera travel per turn -- the reported "moves weird on every left
+        /// and right".
         /// </summary>
-        private Quaternion Heading()
+        private Quaternion Heading(float dt)
         {
             if (rigid || carPhysics == null)
                 return car.rotation;
 
+            var facing = Flatten(car.forward);
+            var target = facing;
+
             var velocity = carPhysics.linearVelocity;
             velocity.y = 0f;
-            if (velocity.magnitude < rotationThreshold)
-                return Quaternion.LookRotation(Flatten(car.forward), Vector3.up);
+            var speed = velocity.magnitude;
 
-            return Quaternion.LookRotation(velocity.normalized, Vector3.up);
+            if (speed > rotationThreshold)
+            {
+                var travel = velocity / speed;
+
+                // reversing is still forwards as far as the shot is concerned. taking the travel
+                // direction here would put the camera in front of the bonnet looking back
+                if (Vector3.Dot(travel, facing) > 0f)
+                {
+                    // ramp the travel direction in with speed rather than switching to it at a
+                    // threshold, so there is no frame where the heading jumps
+                    var authority = headingSpeedRange > 0.01f
+                        ? Mathf.Clamp01((speed - rotationThreshold) / headingSpeedRange)
+                        : 1f;
+
+                    target = Flatten(Vector3.Slerp(facing, travel, authority * velocityInfluence));
+                    target = ClampYaw(facing, target, maxHeadingOffset);
+                }
+            }
+
+            var targetYaw = Mathf.Atan2(target.x, target.z) * Mathf.Rad2Deg;
+            if (!headingStarted)
+            {
+                headingYaw = targetYaw;
+                headingStarted = true;
+            }
+            else
+            {
+                headingYaw = Mathf.LerpAngle(headingYaw, targetYaw, Blend(headingSmoothing, dt));
+            }
+
+            return Quaternion.Euler(0f, headingYaw, 0f);
+        }
+
+        /// <summary>holds a direction within a given yaw of a reference direction</summary>
+        private static Vector3 ClampYaw(Vector3 reference, Vector3 direction, float maxDegrees)
+        {
+            if (maxDegrees <= 0f) return reference;
+            var angle = Vector3.SignedAngle(reference, direction, Vector3.up);
+            if (Mathf.Abs(angle) <= maxDegrees) return direction;
+            return Quaternion.Euler(0f, Mathf.Sign(angle) * maxDegrees, 0f) * reference;
         }
 
         private static Vector3 Flatten(Vector3 v)
@@ -163,14 +244,23 @@ namespace SpinMotion
 
         /// <summary>
         /// aims ahead of the car and towards the inside of the turn, so at speed the shot shows where
-        /// the car is going rather than where it already is
+        /// the car is going rather than where it already is.
+        ///
+        /// the swing is driven by the damped steering rather than the raw axis, and then clamped in
+        /// degrees. raw, a touch button put the aim through its full travel in one frame on press and
+        /// again on release: at the shipped 4 m over an 8 m lead that is a 27 degree slam each way,
+        /// which is most of what a corner used to look like.
         /// </summary>
         private Vector3 AimPoint(Quaternion heading)
         {
             var point = car.position + heading * (Vector3.forward * lookAheadDistance);
             if (rigid) return point;
 
-            point += heading * (Vector3.right * (lookAheadLateral * SteerFraction()));
+            var lateral = lookAheadLateral * steerSmoothed;
+            var limit = Mathf.Abs(lookAheadDistance) * Mathf.Tan(Mathf.Clamp(maxAimYaw, 0f, 60f) * Mathf.Deg2Rad);
+            lateral = Mathf.Clamp(lateral, -limit, limit);
+
+            point += heading * (Vector3.right * lateral);
             return point;
         }
 
@@ -196,8 +286,8 @@ namespace SpinMotion
             }
 
             // a steering contribution on top, so the lean starts as the car turns in rather than only
-            // once it is already sliding
-            target += -SteerFraction() * maxRoll * 0.4f;
+            // once it is already sliding. damped like the aim, or a button press snaps the horizon
+            target += -steerSmoothed * maxRoll * 0.4f;
 
             roll = Mathf.Lerp(roll, Mathf.Clamp(target, -maxRoll, maxRoll), Blend(rollSmoothing, dt));
             return roll;
