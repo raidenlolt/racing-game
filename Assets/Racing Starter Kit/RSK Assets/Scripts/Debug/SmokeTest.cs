@@ -107,6 +107,18 @@ namespace SpinMotion
                         Vector3.Distance(cars[a].transform.position, cars[b].transform.position));
             Check(minPairDistance > 4f, "closest pair of cars on the grid is " + minPairDistance.ToString("F1") + " m apart");
 
+            // ---- mini map
+            yield return null;
+            var miniMap = FindFirstObjectByType<MiniMapGUI>();
+            Check(miniMap != null && miniMap.HasTrack, "mini map traced the circuit (" + (miniMap != null && miniMap.track != null ? miniMap.track.PointCount : 0) + " points)");
+            Check(miniMap != null && miniMap.MarkerCount == cars.Length, "mini map has one marker per car (" + (miniMap != null ? miniMap.MarkerCount : 0) + ")");
+            if (miniMap != null && miniMap.mapArea != null)
+            {
+                var playerMarker = miniMap.mapArea.Find("Player Marker") as RectTransform;
+                var inside = playerMarker != null && miniMap.mapArea.rect.Contains(playerMarker.anchoredPosition);
+                Check(inside, "player marker inside the map area" + (playerMarker != null ? " at " + playerMarker.anchoredPosition.ToString("F0") : ""));
+            }
+
             // ---- countdown: watch for launches and for bots creeping
             var watchUntil = Time.realtimeSinceStartup + 6f;
             var player = FindFirstObjectByType<CarUserControl>();
