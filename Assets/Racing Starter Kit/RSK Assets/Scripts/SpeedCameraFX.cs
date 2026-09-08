@@ -36,6 +36,15 @@ namespace SpinMotion
         public float nitroShakeMultiplier = 2.2f;
         public float shakeFrequency = 22f;
 
+        [Header("Impact")]
+        [Tooltip("Degrees of camera kick per m/s of impact speed")]
+        public float hitKickPerMetrePerSecond = 0.9f;
+        [Tooltip("Ceiling on the kick, so a 20 m/s shunt does not throw the view into the sky")]
+        public float maxHitKick = 7f;
+        [Tooltip("Extra shake, in degrees, added on a hit and decayed over the burst")]
+        public float hitShakePerMetrePerSecond = 0.25f;
+        public float hitDecaySpeed = 6f;
+
         [Header("Post processing (Desktop tier only)")]
         [Tooltip("Object holding the heavier URP Volume. Left disabled on low quality levels.")]
         public GameObject postProcessingRoot;
@@ -48,6 +57,8 @@ namespace SpinMotion
         private NitroSystem nitro;
         private float punch;
         private float shakeSeed;
+        private Vector2 hitKick;       // pitch, yaw
+        private float hitShake;
 
         private void Awake()
         {
@@ -56,13 +67,32 @@ namespace SpinMotion
             shakeSeed = Random.value * 100f;
 
             if (gameEvents != null)
+            {
                 gameEvents.PlayerNitroFiredEvent.AddListener(OnNitroFired);
+                gameEvents.PlayerHitEvent.AddListener(OnPlayerHit);
+            }
         }
 
         private void OnDestroy()
         {
-            if (gameEvents != null)
-                gameEvents.PlayerNitroFiredEvent.RemoveListener(OnNitroFired);
+            if (gameEvents == null) return;
+            gameEvents.PlayerNitroFiredEvent.RemoveListener(OnNitroFired);
+            gameEvents.PlayerHitEvent.RemoveListener(OnPlayerHit);
+        }
+
+        /// <summary>
+        /// a hit from behind pitches the view down and forward, the way a head snaps in a rear-end
+        /// shunt; a side hit yaws it away from the impact. both recover over the decay
+        /// </summary>
+        private void OnPlayerHit(float impactSpeed, Vector3 localDirection)
+        {
+            var kick = Mathf.Min(impactSpeed * hitKickPerMetrePerSecond, maxHitKick);
+            var fromBehind = localDirection.z < -0.3f;
+            var fromFront = localDirection.z > 0.3f;
+            var pitch = fromBehind ? -kick : (fromFront ? kick * 0.6f : 0f);
+            var yaw = Mathf.Abs(localDirection.x) > 0.3f ? -Mathf.Sign(localDirection.x) * kick * 0.7f : 0f;
+            hitKick = new Vector2(pitch, yaw);
+            hitShake = Mathf.Max(hitShake, impactSpeed * hitShakePerMetrePerSecond);
         }
 
         private void Start()
@@ -128,11 +158,22 @@ namespace SpinMotion
             cam.fieldOfView = Mathf.Min(fov, maxFieldOfView);
 
             ApplyShake(speedFraction, boosting);
+            ApplyHitKick();
+        }
+
+        private void ApplyHitKick()
+        {
+            if (hitKick.sqrMagnitude < 0.0001f) return;
+            transform.rotation *= Quaternion.Euler(hitKick.x, hitKick.y, 0f);
+            // unscaled, so the kick still settles during the finish sequence's slow-motion beat
+            hitKick = Vector2.Lerp(hitKick, Vector2.zero, hitDecaySpeed * Time.unscaledDeltaTime);
         }
 
         private void ApplyShake(float speedFraction, bool boosting)
         {
             var amount = maxShakeDegrees * speedFraction * (boosting ? nitroShakeMultiplier : 1f);
+            amount += hitShake;
+            hitShake = Mathf.Lerp(hitShake, 0f, hitDecaySpeed * Time.unscaledDeltaTime);
             if (amount <= 0.001f) return;
 
             // perlin rather than Random so the shake is smooth instead of a per-frame jitter

@@ -179,6 +179,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player Car 2 (AI Variant)
       objectReference: {fileID: 0}
+    - target: {fileID: 4978299879913551241, guid: 22dd4fa75671ed0438666a8750b3fb5a,
+        type: 3}
+      propertyPath: m_Topspeed
+      value: 183
+      objectReference: {fileID: 0}
     - target: {fileID: 7345720917679976139, guid: 22dd4fa75671ed0438666a8750b3fb5a,
         type: 3}
       propertyPath: engineSoundStyle
@@ -244,6 +249,7 @@ MonoBehaviour:
   m_Target: {fileID: 0}
   m_StopWhenTargetReached: 0
   m_ReachTargetThreshold: 2
+  gameEvents: {fileID: 0}
 --- !u!114 &7169291885239391488
 MonoBehaviour:
   m_ObjectHideFlags: 0

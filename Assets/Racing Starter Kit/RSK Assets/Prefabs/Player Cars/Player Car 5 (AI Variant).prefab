@@ -124,6 +124,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8476736119097481701, guid: dec391ad46ef3344faf616342a8cace2,
+        type: 3}
+      propertyPath: m_Topspeed
+      value: 193
+      objectReference: {fileID: 0}
     - target: {fileID: 8553222175849975066, guid: dec391ad46ef3344faf616342a8cace2,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -257,6 +262,7 @@ MonoBehaviour:
   m_Target: {fileID: 0}
   m_StopWhenTargetReached: 0
   m_ReachTargetThreshold: 2
+  gameEvents: {fileID: 0}
 --- !u!114 &7255303510824006330
 MonoBehaviour:
   m_ObjectHideFlags: 0

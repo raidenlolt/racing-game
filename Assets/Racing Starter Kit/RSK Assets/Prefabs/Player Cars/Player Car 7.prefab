@@ -5484,6 +5484,8 @@ GameObject:
   - component: {fileID: 6489732448822659574}
   - component: {fileID: 8666376040609588178}
   - component: {fileID: 8501948697059451707}
+  - component: {fileID: 6339647313993479434}
+  - component: {fileID: 3835630866047435186}
   m_Layer: 0
   m_Name: Player Car 7
   m_TagString: Untagged
@@ -5541,7 +5543,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &1813125279892163212
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5574,12 +5576,12 @@ MonoBehaviour:
   m_MaximumSteerAngle: 18
   m_SteerHelper: 1
   m_TractionControl: 1
-  m_FullTorqueOverAllWheels: 2900
+  m_FullTorqueOverAllWheels: 3750
   m_ReverseTorque: 1000
   m_MaxHandbrakeTorque: 100000000
   m_Downforce: 100
   m_SpeedType: 0
-  m_Topspeed: 142
+  m_Topspeed: 170
   m_RevRangeBoundary: 1
   m_SlipLimit: 0.4
   m_BrakeTorque: 20000
@@ -5727,6 +5729,67 @@ MonoBehaviour:
   secondsStuckBeforeReset: 4
   respawnHeight: 2
   cooldown: 2
+--- !u!114 &6339647313993479434
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6627166573620393389}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dffa4f8537cc63c498ee728542ddf228, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.CarImpactFX
+  gameEvents: {fileID: 11400000, guid: 53a3a1c43dafc4df88b337434e1a6d28, type: 2}
+  minimumImpactSpeed: 3
+  hardImpactSpeed: 8
+  cooldown: 0.25
+  carsOnly: 1
+  shovePerMetrePerSecond: 0.35
+  yawJoltPerMetrePerSecond: 260
+  pitchJoltPerMetrePerSecond: 180
+  maxJoltSpeed: 15
+  sparksPrefab: {fileID: 5893656666905233235, guid: 49fbdd0255558764eb40e20459a71955,
+    type: 3}
+  sparksPerHit: 24
+  lightHitClip: {fileID: 0}
+  mediumHitClip: {fileID: 0}
+  heavyHitClip: {fileID: 0}
+  volume: 0.8
+  hitStopTimeScale: 0.7
+  hitStopSeconds: 0.08
+  vibrateOnHardHit: 1
+--- !u!114 &3835630866047435186
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6627166573620393389}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 181ef4eda2cee8c46959dad0841e5e52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.NitroExhaustFX
+  flamePrefab: {fileID: 3674071360404628202, guid: 5cd95f0f9d112e849a502ae8801d9b5b,
+    type: 3}
+  streakPrefab: {fileID: 5020769961094480490, guid: 4b9b1fc1dbd4c504295754bec9c2ccba,
+    type: 3}
+  exhaustOffsets:
+  - {x: -0.48479998, y: 0.366, z: -2.575}
+  - {x: 0.48479998, y: 0.366, z: -2.575}
+  levelOne: {x: 45, y: 12, z: 0.75}
+  levelTwo: {x: 80, y: 24, z: 1}
+  levelThree: {x: 130, y: 40, z: 1.35}
+  levelOneColor: {r: 0.45, g: 0.75, b: 1, a: 1}
+  levelTwoColor: {r: 1, g: 0.62, b: 0.2, a: 1}
+  levelThreeColor: {r: 1, g: 0.35, b: 0.12, a: 1}
+  igniteClip: {fileID: 0}
+  loopClip: {fileID: 0}
+  volume: 0.7
+  basePitch: 0.95
+  pitchPerLevel: 0.14
 --- !u!1 &7809162200904212916
 GameObject:
   m_ObjectHideFlags: 0

@@ -179,6 +179,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player Car 6 (AI Variant)
       objectReference: {fileID: 0}
+    - target: {fileID: 9013510020696986392, guid: 80c1a69e9119ea2478943ca4e31125a5,
+        type: 3}
+      propertyPath: m_Topspeed
+      value: 155
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 765773007875552803, guid: 80c1a69e9119ea2478943ca4e31125a5, type: 3}
     m_RemovedGameObjects: []
@@ -251,6 +256,7 @@ MonoBehaviour:
   m_Target: {fileID: 0}
   m_StopWhenTargetReached: 0
   m_ReachTargetThreshold: 2
+  gameEvents: {fileID: 0}
 --- !u!114 &7104979872382423933
 MonoBehaviour:
   m_ObjectHideFlags: 0

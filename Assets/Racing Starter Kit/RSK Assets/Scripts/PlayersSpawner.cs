@@ -36,10 +36,30 @@ namespace SpinMotion
         public PlayerSpawnIndex playerSpawnIndex = PlayerSpawnIndex.First;
         public int customPlayerSpawnIndex = 0; // only used if playerSpawnIndex is Custom
 
+        // cars used to be instantiated at the raw spawn point transform. two things went wrong with
+        // that on the tracks whose grids were placed by hand: a point could sit inside the tarmac,
+        // and when a scene had fewer points than cars the index was clamped, so the last bot was
+        // instantiated inside the previous one. two overlapping body colliders are separated by
+        // depenetration at up to 10 m/s, which is the "cars flying at the start" the client saw
+        [Header("Placement")]
+        [Tooltip("How far above a spawn point the ground probe starts. Has to clear any bump in the road under the grid.")]
+        public float groundProbeHeight = 10f;
+        [Tooltip("Metres above the surface a car is placed. Wheels hang about 0.1 m below the car origin, so this is a short drop, not a fall.")]
+        public float groundClearance = 0.35f;
+        [Tooltip("Half extents of the box used to test whether a grid slot already holds a car")]
+        public Vector3 occupancyHalfExtents = new Vector3(1.0f, 0.5f, 2.2f);
+        [Tooltip("If a slot is occupied the car is moved back down the grid by this much and tested again")]
+        public float occupiedStepBack = 9f;
+        [Tooltip("Cap on how fast physics may push a car out of any residual overlap. Unity's default of 10 m/s is a launch; this is a nudge.")]
+        public float maxDepenetrationVelocity = 1f;
+
         private List<(GameObject go, Vector3 spawnPos, Quaternion spawnRot)> spawnedPlayers = new();
         private List<CheckpointTracker> playersCheckpointTrackers = new();
         private List<GameObject> aiCarPrefabPool = new(); // remaining prefabs for the current random pass
         private int nextAiCarPrefabIndex = 0; // used when randomizeAiCars is off
+        private readonly HashSet<int> usedSlots = new();
+        private static readonly RaycastHit[] GroundHits = new RaycastHit[16];
+        private static readonly Collider[] Nearby = new Collider[16];
 
         private void Awake()
         {
@@ -51,6 +71,15 @@ namespace SpinMotion
             if (aiCarPrefabs.Count == 0)
             {
                 Debug.LogError("No AI car prefabs assigned");
+            }
+
+            var carsPerRace = RaceData.AiBotsSelected + 1;
+            if (spawnPoints.Count < carsPerRace)
+            {
+                Debug.LogError("[Spawner] " + gameObject.scene.name + " has " + spawnPoints.Count
+                               + " spawn points but a race needs " + carsPerRace
+                               + ". Bots beyond the last free slot will not be spawned. "
+                               + "Run Tools > Racing > Repair Spawn Grids.");
             }
 
             gameEvents.SpawnPlayersEvent.AddListener(OnSpawnPlayers);
@@ -67,6 +96,8 @@ namespace SpinMotion
 
             aiCarPrefabPool.Clear();
             nextAiCarPrefabIndex = 0;
+            usedSlots.Clear();
+            var placed = 0;
 
             // determine player spawn index
             int playerSpawnIndex = 0;
@@ -89,7 +120,12 @@ namespace SpinMotion
                 if (i == 0)
                 {
                     // spawn player at the determined index
-                    var player = Instantiate(GetPlayerPrefab(), spawnPoints[playerSpawnIndex].position, spawnPoints[playerSpawnIndex].rotation);
+                    Vector3 pos; Quaternion rot;
+                    ResolveSpawnPose(spawnPoints[playerSpawnIndex], out pos, out rot);
+                    var player = Instantiate(GetPlayerPrefab(), pos, rot);
+                    SoftenDepenetration(player);
+                    usedSlots.Add(playerSpawnIndex);
+                    placed++;
                     spawnedPlayers.Add((player, player.transform.position, player.transform.rotation));
 
                     var checkpointTracker = player.GetComponentInChildren<CheckpointTracker>();
@@ -100,12 +136,25 @@ namespace SpinMotion
                 {
                     // spawn AI at their respective indexes
                     int aiSpawnIdx = (i <= playerSpawnIndex) ? i - 1 : i; // adjust AI index if it overlaps with player
-                    aiSpawnIdx = Mathf.Clamp(aiSpawnIdx, 0, totalSpawns - 1);
+
+                    // never double-book a slot. the old code clamped the index here, which silently put
+                    // the seventh car inside the sixth on any track with only six points
+                    if (aiSpawnIdx >= totalSpawns || usedSlots.Contains(aiSpawnIdx))
+                    {
+                        Debug.LogError("[Spawner] no free spawn point for bot " + i + " (" + totalSpawns
+                                       + " points in scene). Bot skipped rather than spawned inside another car.");
+                        continue;
+                    }
 
                     var aiCarPrefab = GetNextAiCarPrefab();
                     if (aiCarPrefab == null) { continue; }
 
-                    var aiCar = Instantiate(aiCarPrefab, spawnPoints[aiSpawnIdx].position, spawnPoints[aiSpawnIdx].rotation);
+                    Vector3 pos; Quaternion rot;
+                    ResolveSpawnPose(spawnPoints[aiSpawnIdx], out pos, out rot);
+                    var aiCar = Instantiate(aiCarPrefab, pos, rot);
+                    SoftenDepenetration(aiCar);
+                    usedSlots.Add(aiSpawnIdx);
+                    placed++;
                     spawnedPlayers.Add((aiCar, aiCar.transform.position, aiCar.transform.rotation));
 
                     var aiTracker = Instantiate(aiWaypointTrackerPrefab).GetComponent<AIWaypointTracker>();
@@ -118,7 +167,77 @@ namespace SpinMotion
                     playersCheckpointTrackers.Add(checkpointTracker);
                 }
             }
+            Debug.Log("[Spawner] placed " + placed + " of " + (aiCount + 1) + " cars on "
+                      + totalSpawns + " spawn points");
             gameEvents.PlayersCheckpointTrackersAssignedEvent.Invoke(playersCheckpointTrackers);
+        }
+
+        /// <summary>
+        /// where a car should actually be put for a spawn point: on the road surface under the point,
+        /// upright, and not inside a car that is already there.
+        ///
+        /// the surface is found by a ray from well above the point, so a point that was dragged a
+        /// little into the tarmac by hand still spawns a car on top of it. cars already on the grid
+        /// are ignored by the ray and instead tested for with a box the size of a car body; an
+        /// occupied slot moves the new car one row further back until it finds room
+        /// </summary>
+        private void ResolveSpawnPose(Transform point, out Vector3 position, out Quaternion rotation)
+        {
+            rotation = Quaternion.Euler(0f, point.eulerAngles.y, 0f);
+            position = SnapToGround(point.position);
+
+            var forward = rotation * Vector3.forward;
+            for (int attempt = 0; attempt < 4 && SlotOccupied(position, rotation); attempt++)
+            {
+                Debug.LogWarning("[Spawner] " + point.name + " already holds a car, stepping back "
+                                 + occupiedStepBack + " m");
+                position = SnapToGround(position - forward * occupiedStepBack);
+            }
+        }
+
+        private Vector3 SnapToGround(Vector3 at)
+        {
+            var origin = at + Vector3.up * groundProbeHeight;
+            var count = Physics.RaycastNonAlloc(origin, Vector3.down, GroundHits, groundProbeHeight * 2f,
+                                                ~0, QueryTriggerInteraction.Ignore);
+            var best = float.MaxValue;
+            var found = false;
+            var surface = at;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = GroundHits[i];
+                if (hit.collider == null) continue;
+                if (hit.collider.attachedRigidbody != null) continue;   // a car, not the road
+                if (hit.distance < best)
+                {
+                    best = hit.distance;
+                    surface = hit.point;
+                    found = true;
+                }
+            }
+            if (!found) return at;
+            return surface + Vector3.up * groundClearance;
+        }
+
+        private bool SlotOccupied(Vector3 position, Quaternion rotation)
+        {
+            // colliders instantiated this frame are only guaranteed visible to queries after a sync
+            Physics.SyncTransforms();
+            var centre = position + Vector3.up * (occupancyHalfExtents.y + 0.2f);
+            var count = Physics.OverlapBoxNonAlloc(centre, occupancyHalfExtents, Nearby, rotation, ~0,
+                                                   QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                var c = Nearby[i];
+                if (c != null && c.attachedRigidbody != null) return true;
+            }
+            return false;
+        }
+
+        private void SoftenDepenetration(GameObject car)
+        {
+            foreach (var rb in car.GetComponentsInChildren<Rigidbody>())
+                rb.maxDepenetrationVelocity = maxDepenetrationVelocity;
         }
 
         /// <summary>
@@ -171,7 +290,9 @@ namespace SpinMotion
             // reallocate players position and rotation to initial spawn points
             foreach (var player in spawnedPlayers)
             {
-                player.go.transform.position = player.spawnPos;
+                // the cached position was already resolved against the road at spawn time, but the
+                // snap is cheap and protects a restart on a scene whose colliders were rebuilt since
+                player.go.transform.position = SnapToGround(player.spawnPos);
 
                 // check for main and child Rigidbodies
                 Rigidbody[] rigidbodies = player.go.GetComponentsInChildren<Rigidbody>();

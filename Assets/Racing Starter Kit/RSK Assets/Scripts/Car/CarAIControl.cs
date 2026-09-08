@@ -40,6 +40,15 @@ namespace SpinMotion
         [SerializeField] private bool m_StopWhenTargetReached;                                    // should we stop driving when we reach the target?
         [SerializeField] private float m_ReachTargetThreshold = 2;                                // proximity to target to consider we 'reached' it, and stop driving.
 
+        // bots used to drive at full throttle from the moment they spawned. during the countdown the
+        // freeze constraints held the chassis still while the driven wheels spun up against them, and
+        // the instant the constraints dropped every bot leapt off the line, sometimes onto two wheels.
+        // holding them until GO removes that, and the player still gets their burnout
+        [Header("Grid")]
+        [Tooltip("Sit with the handbrake on until the race has started. Borrowed from a sibling component if left empty.")]
+        public GameEvents gameEvents;
+        private bool raceHasStarted;
+
         private float m_RandomPerlin;             // A random value for the car to base its wander on (so that AI cars don't all wander in the same pattern)
         private CarController m_CarController;    // Reference to actual car controller we are controlling
         private float m_AvoidOtherCarTime;        // time until which to avoid the car we recently collided with
@@ -56,7 +65,30 @@ namespace SpinMotion
             m_RandomPerlin = Random.value*100;
 
             m_Rigidbody = GetComponent<Rigidbody>();
+
+            if (gameEvents == null)
+            {
+                var nitro = GetComponent<NitroSystem>();
+                if (nitro != null) gameEvents = nitro.gameEvents;
+            }
+            if (gameEvents != null)
+            {
+                gameEvents.RaceStartedEvent.AddListener(OnRaceStarted);
+                gameEvents.RestartRaceEvent.AddListener(OnRestartRace);
+            }
         }
+
+        private void OnDestroy()
+        {
+            if (gameEvents == null) return;
+            gameEvents.RaceStartedEvent.RemoveListener(OnRaceStarted);
+            gameEvents.RestartRaceEvent.RemoveListener(OnRestartRace);
+        }
+
+        private void OnRaceStarted() { raceHasStarted = true; }
+        // a restart goes back through the countdown, so the bots go back to waiting for GO.
+        // a finish does not clear this: bots keep racing behind the player once they have crossed
+        private void OnRestartRace() { raceHasStarted = false; }
 
         public void SetTarget(Transform target)
         {
@@ -66,7 +98,13 @@ namespace SpinMotion
 
         private void FixedUpdate()
         {
-            if (m_Target == null || !m_Driving)
+            if (gameEvents != null && !raceHasStarted)
+            {
+                // on the grid: handbrake only. no footbrake, because below 5 mph the controller
+                // turns brake input into reverse torque and the wheels would spin backwards
+                m_CarController.Move(0, 0, 0f, 1f);
+            }
+            else if (m_Target == null || !m_Driving)
             {
                 // Car should not be moving,
                 // use handbrake to stop
@@ -193,14 +231,17 @@ namespace SpinMotion
             // detect collision against other cars, so that we can take evasive action
             if (col.rigidbody != null)
             {
-                var otherAI = col.rigidbody.GetComponent<CarAIControl>();
-                if (otherAI != null)
+                // any car counts, the player's included. this used to look for CarAIControl only, so a
+                // bot that rear-ended the player just kept pushing while one that tapped another bot
+                // backed off and went round
+                var otherCar = col.rigidbody.GetComponent<CarController>();
+                if (otherCar != null && otherCar != m_CarController)
                 {
                     // we'll take evasive action for 1 second
                     m_AvoidOtherCarTime = Time.time + 1;
 
                     // but who's in front?...
-                    if (Vector3.Angle(transform.forward, otherAI.transform.position - transform.position) < 90)
+                    if (Vector3.Angle(transform.forward, otherCar.transform.position - transform.position) < 90)
                     {
                         // the other ai is in front, so it is only good manners that we ought to brake...
                         m_AvoidOtherCarSlowdown = 0.5f;
@@ -213,7 +254,7 @@ namespace SpinMotion
 
                     // both cars should take evasive action by driving along an offset from the path centre,
                     // away from the other car
-                    var otherCarLocalDelta = transform.InverseTransformPoint(otherAI.transform.position);
+                    var otherCarLocalDelta = transform.InverseTransformPoint(otherCar.transform.position);
                     float otherCarAngle = Mathf.Atan2(otherCarLocalDelta.x, otherCarLocalDelta.z);
                     m_AvoidPathOffset = m_LateralWanderDistance*-Mathf.Sign(otherCarAngle);
                 }

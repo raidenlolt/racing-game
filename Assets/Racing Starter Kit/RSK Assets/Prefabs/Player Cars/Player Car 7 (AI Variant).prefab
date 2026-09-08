@@ -114,6 +114,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1813125279892163212, guid: c7a75dc843e013e4da69ec4c1ace88d0,
+        type: 3}
+      propertyPath: m_Topspeed
+      value: 160
+      objectReference: {fileID: 0}
     - target: {fileID: 4228361962956207416, guid: c7a75dc843e013e4da69ec4c1ace88d0,
         type: 3}
       propertyPath: isPlayer
@@ -245,6 +250,7 @@ MonoBehaviour:
   m_Target: {fileID: 0}
   m_StopWhenTargetReached: 0
   m_ReachTargetThreshold: 2
+  gameEvents: {fileID: 0}
 --- !u!114 &5891695158862796994
 MonoBehaviour:
   m_ObjectHideFlags: 0

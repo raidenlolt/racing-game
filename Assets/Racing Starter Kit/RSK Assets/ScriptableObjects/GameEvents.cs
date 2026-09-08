@@ -35,6 +35,14 @@ namespace SpinMotion
         public PlayerNitroFiredEvent PlayerNitroFiredEvent = new();
         public PlayerNitroEndedEvent PlayerNitroEndedEvent = new();
         public OnClickFireNitroEvent OnClickFireNitroEvent = new();
+
+        // collisions. raised by the player's CarImpactFX only, so the camera and HUD react to hits on
+        // the player and not to every bot-on-bot tap in the pack
+        public PlayerHitEvent PlayerHitEvent = new();
+
+        // the finish sequence. RaceFinishedEvent keeps its meaning (the race is over, stop the
+        // timer, disengage nitro); this one fires a few seconds later when the results panel may open
+        public RaceResultsReadyEvent RaceResultsReadyEvent = new();
     }
 
     public class ToggleCarFreezeEvent : UnityEvent<bool> {}
@@ -60,6 +68,10 @@ namespace SpinMotion
     public class PlayerNitroFiredEvent : UnityEvent<NitroLevel, bool> {}
     public class PlayerNitroEndedEvent : UnityEvent {}
     public class OnClickFireNitroEvent : UnityEvent {}
+
+    /// <summary>impact speed in m/s along the contact normal, and the hit direction in the car's local space (z negative is from behind)</summary>
+    public class PlayerHitEvent : UnityEvent<float, Vector3> {}
+    public class RaceResultsReadyEvent : UnityEvent<RaceFinishType> {}
 
     public class OnClickRestartRaceEvent : UnityEvent {}
     public class OnClickRestartGameEvent : UnityEvent {}
