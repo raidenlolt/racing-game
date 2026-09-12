@@ -46,6 +46,18 @@ namespace SpinMotion
         [Tooltip("Seconds wedged against a wall before the car is put back on the line. Long enough that reversing out under your own power is never interrupted.")]
         public float secondsStuckBeforeReset = 4f;
 
+        // the reported case: the car beached on the verge just outside the trackside barrier, stopped
+        // dead, and never came back. the road kit's collider is one slab that runs under the verge
+        // and the barrier, so the surface test still said "road", and nothing solid was touching the
+        // car so the wedged test never fired. two signals that do not depend on the geometry:
+        [Header("Going nowhere")]
+        [Tooltip("Seconds of holding the throttle without moving before the car is put back. The player is asking to go and cannot; nothing else needs to be known.")]
+        public float secondsThrottledStuckBeforeReset = 3f;
+        [Tooltip("Seconds stopped, throttle or not, before a car this far from the racing line is put back. Idling in the driving lane is left alone.")]
+        public float secondsIdleOffLineBeforeReset = 6f;
+        [Tooltip("Metres from the racing line beyond which a stopped car counts as off the lane rather than idling")]
+        public float idleResetDistanceFromLine = 9f;
+
         [Header("Placement")]
         [Tooltip("How far above the road the car is placed, so it drops onto the surface instead of through it")]
         public float respawnHeight = 2f;
@@ -55,7 +67,10 @@ namespace SpinMotion
         public int RespawnCount { get; private set; }
 
         private Rigidbody body;
+        private CarController car;
         private float lastRespawnTime = -999f;
+        /// <summary>when the car first stood still with the throttle held, or -1</summary>
+        private float throttledStuckSince = -1f;
         /// <summary>when the car was last on the circuit, as wall-clock time</summary>
         private float lastOnTrackTime;
         /// <summary>whether this scene's road is solid enough to test against directly</summary>
@@ -70,6 +85,7 @@ namespace SpinMotion
         private void Awake()
         {
             body = GetComponent<Rigidbody>();
+            car = GetComponent<CarController>();
             lastOnTrackTime = Time.time;
             lastMovingTime = Time.time;
             roadIsSolid = SceneHasRoadColliders();
@@ -103,6 +119,7 @@ namespace SpinMotion
             {
                 lastOnTrackTime = Time.time;
                 lastMovingTime = Time.time;
+                throttledStuckSince = -1f;
                 return;
             }
             if (aiWaypointSet == null || aiWaypointSet.Items.Count == 0)
@@ -110,18 +127,42 @@ namespace SpinMotion
 
             Vector3 onLine, along;
             var fromLine = DistanceFromRacingLine(transform.position, out onLine, out along);
-            if (IsOnTrack(fromLine))
+            if (IsOnTrack(fromLine, onLine))
                 lastOnTrackTime = Time.time;
 
             var mph = body.linearVelocity.magnitude * 2.23693629f;
             if (mph > stuckSpeed) lastMovingTime = Time.time;
 
+            var throttled = car != null && car.AccelInput > 0.5f;
+            if (throttled && mph < stuckSpeed)
+            {
+                if (throttledStuckSince < 0f) throttledStuckSince = Time.time;
+            }
+            else
+            {
+                throttledStuckSince = -1f;
+            }
+
             if (transform.position.y < fallHeight ||                              // fell out of the world
                 Time.time - lastOnTrackTime >= secondsOffRoadBeforeReset ||       // off the circuit
-                IsWedgedAgainstBarrier())                                         // nose into a wall
+                IsWedgedAgainstBarrier() ||                                       // nose into a wall
+                IsGoingNowhere(fromLine))                                         // beached, throttle or not
             {
                 PlaceOnLine(onLine, along);
             }
+        }
+
+        /// <summary>
+        /// stopped and not getting anywhere, without needing to know what stopped the car.
+        /// bots are excluded: AIStuckRecovery reverses them out first and calls ForceRespawn itself
+        /// </summary>
+        private bool IsGoingNowhere(float distanceFromLine)
+        {
+            if (hasOwnStuckRecovery) return false;
+            if (throttledStuckSince >= 0f && Time.time - throttledStuckSince >= secondsThrottledStuckBeforeReset)
+                return true;
+            return Time.time - lastMovingTime >= secondsIdleOffLineBeforeReset
+                   && distanceFromLine > idleResetDistanceFromLine;
         }
 
         /// <summary>
@@ -180,8 +221,13 @@ namespace SpinMotion
         /// threshold has to clear the widest legitimate tarmac -- 24.4 m on Race_Track_01 -- rather
         /// than the road's nominal width.
         /// </summary>
-        private bool IsOnTrack(float distanceFromLine)
+        private bool IsOnTrack(float distanceFromLine, Vector3 onLine)
         {
+            // outside the perimeter walls is off the circuit whatever surface is underneath. a car
+            // that has been launched over a wall lands on the safety floor, which the road test
+            // already rejects, but on some tracks the road slab itself continues past the wall
+            if (IsBeyondPerimeterWall(onLine)) return false;
+
             if (!roadIsSolid)
                 return distanceFromLine <= maxDistanceFromLine;
 
@@ -196,6 +242,32 @@ namespace SpinMotion
                 if (hit.collider.transform.root == transform.root) continue;   // our own bodywork
                 if (hit.collider.gameObject.name.StartsWith(roadNamePrefix,
                         System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// whether one of the invisible perimeter walls stands between the racing line and the car.
+        /// the walls are the only colliders named Wall*, and they run along both edges of the road
+        /// on every track that has them, so a wall between the line and the car means the car is on
+        /// the far side of the road edge
+        /// </summary>
+        private bool IsBeyondPerimeterWall(Vector3 onLine)
+        {
+            var from = onLine + Vector3.up * 1.5f;
+            var to = transform.position + Vector3.up * 1.5f;
+            var delta = to - from;
+            var distance = delta.magnitude;
+            if (distance < 1f) return false;
+
+            var count = Physics.RaycastNonAlloc(from, delta / distance, GroundHits, distance, ~0,
+                                                QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                var hit = GroundHits[i];
+                if (hit.collider == null) continue;
+                if (hit.collider.gameObject.name.StartsWith("Wall", System.StringComparison.OrdinalIgnoreCase))
                     return true;
             }
             return false;
@@ -276,6 +348,7 @@ namespace SpinMotion
             lastRespawnTime = Time.time;
             lastOnTrackTime = Time.time;
             lastMovingTime = Time.time;
+            throttledStuckSince = -1f;
             RespawnCount++;
         }
     }

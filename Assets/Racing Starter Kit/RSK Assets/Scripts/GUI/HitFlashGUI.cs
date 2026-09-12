@@ -15,18 +15,26 @@ namespace SpinMotion
         public GameEvents gameEvents;
 
         public Color flashColor = new Color(1f, 0.18f, 0.08f);
+        // QA read the flash as "blinking" on the second track: the pack rear-ends a slow player over
+        // and over, and at 0.75 alpha every tap washed the whole screen red. it is now an edge tint,
+        // it needs a real hit to show at all, and it will not fire twice in quick succession
         [Tooltip("Alpha at a hard hit")]
-        [Range(0f, 1f)] public float maxAlpha = 0.75f;
+        [Range(0f, 1f)] public float maxAlpha = 0.42f;
         [Tooltip("Impact speed (m/s) that reaches maxAlpha")]
-        public float fullAlphaImpactSpeed = 10f;
+        public float fullAlphaImpactSpeed = 12f;
+        [Tooltip("Hits slower than this (m/s) do not flash at all")]
+        public float minimumImpactSpeed = 4f;
+        [Tooltip("Minimum real seconds between flashes")]
+        public float minimumInterval = 1.2f;
         [Tooltip("How far, in canvas units, the vignette shifts towards the hit so one edge reads heavier")]
         public float directionalOffset = 140f;
-        public float fadePerSecond = 2.6f;
+        public float fadePerSecond = 3.2f;
 
         private Image image;
         private RectTransform rect;
         private float alpha;
         private Vector2 offset;
+        private float lastFlashTime = -999f;
 
         private void Awake()
         {
@@ -49,6 +57,10 @@ namespace SpinMotion
 
         private void OnPlayerHit(float impactSpeed, Vector3 localDirection)
         {
+            if (impactSpeed < minimumImpactSpeed) return;
+            if (Time.unscaledTime - lastFlashTime < minimumInterval) return;
+            lastFlashTime = Time.unscaledTime;
+
             var strength = Mathf.Clamp01(impactSpeed / fullAlphaImpactSpeed);
             alpha = Mathf.Max(alpha, maxAlpha * strength);
             // the hit came from behind: the vignette slides down so the bottom edge is the heavy one.

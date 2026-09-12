@@ -422,6 +422,7 @@ GameObject:
   - component: {fileID: 4021243829418465811}
   - component: {fileID: 965150167369196024}
   - component: {fileID: 6549784448457210430}
+  - component: {fileID: 1278070413890401029}
   m_Layer: 0
   m_Name: Player Car 4
   m_TagString: Untagged
@@ -479,7 +480,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 3
+  m_CollisionDetection: 2
 --- !u!114 &4978299879913551241
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -541,6 +542,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 96468c245ae8e0d4f8f1c7a7b8b0542e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  coastBrakeAboveSpeed: 8
+  coastBrake: 0.35
 --- !u!114 &7345720917679976139
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -663,6 +666,9 @@ MonoBehaviour:
   secondsOffRoadBeforeReset: 2.5
   stuckSpeed: 8
   secondsStuckBeforeReset: 4
+  secondsThrottledStuckBeforeReset: 3
+  secondsIdleOffLineBeforeReset: 6
+  idleResetDistanceFromLine: 9
   respawnHeight: 2
   cooldown: 2
 --- !u!114 &965150167369196024
@@ -726,6 +732,23 @@ MonoBehaviour:
   volume: 0.7
   basePitch: 0.95
   pitchPerLevel: 0.14
+--- !u!114 &1278070413890401029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4956954954255778322}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64bc8757645484243a2d30ecd730d0ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.WallSlide
+  retainedSpeed: 0.82
+  maxNormalUp: 0.5
+  pushOff: 1.2
+  alignRate: 6
+  minimumSpeed: 6
 --- !u!1 &6608388820665456078
 GameObject:
   m_ObjectHideFlags: 0

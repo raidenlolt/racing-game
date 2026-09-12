@@ -119,6 +119,18 @@ namespace SpinMotion
                 Check(inside, "player marker inside the map area" + (playerMarker != null ? " at " + playerMarker.anchoredPosition.ToString("F0") : ""));
             }
 
+            // ---- QA round 2 wiring
+            Check(menu != null && menu.backToTracksButton != null, "menu has a back-to-tracks button");
+            var steerLeft = FindObjectsByType<Image>(FindObjectsSortMode.None).FirstOrDefault(i => i.name == "Icon" && i.transform.parent != null && i.transform.parent.name == "Steer Left Button");
+            Check(steerLeft != null && steerLeft.sprite != null, "steer left pad shows an icon sprite");
+            var gasIcon = FindObjectsByType<Image>(FindObjectsSortMode.None).FirstOrDefault(i => i.name == "Icon" && i.transform.parent != null && i.transform.parent.name == "Throttle Button");
+            Check(gasIcon != null && gasIcon.sprite != null && gasIcon.sprite.name.Contains("Gas"), "gas pad shows the pedal icon");
+            var playerCar = FindFirstObjectByType<CarUserControl>();
+            Check(playerCar != null && playerCar.GetComponent<WallSlide>() != null, "player car has WallSlide");
+            Check(playerCar != null && playerCar.GetComponent<Rigidbody>().collisionDetectionMode == CollisionDetectionMode.ContinuousDynamic, "player car uses continuous dynamic collision");
+            var walls = FindObjectsByType<BoxCollider>(FindObjectsSortMode.None).Where(b => b.name.StartsWith("Wall")).ToList();
+            Check(walls.Count == 0 || walls.All(w => w.sharedMaterial != null && w.sharedMaterial.dynamicFriction < 0.01f), walls.Count + " perimeter walls carry the frictionless material");
+
             // ---- countdown: watch for launches and for bots creeping
             var watchUntil = Time.realtimeSinceStartup + 6f;
             var player = FindFirstObjectByType<CarUserControl>();
@@ -168,6 +180,41 @@ namespace SpinMotion
                       "fire button shows the new boost icon");
                 Check(buttonFx != null && buttonFx.glowRing != null && buttonFx.glowRing.color.a > 0.1f, "glow ring lit while boosting");
                 yield return new WaitForSecondsRealtime(1.5f);
+            }
+
+            // ---- wall brush: a shallow hit on a perimeter wall must keep most of the speed
+            var wallsAll = FindObjectsByType<BoxCollider>(FindObjectsSortMode.None).Where(b => b.name.StartsWith("Wall")).ToList();
+            if (player != null && wallsAll.Count > 0)
+            {
+                var pBody = player.GetComponent<Rigidbody>();
+                var wall = wallsAll.OrderBy(w => Vector3.Distance(w.transform.position, player.transform.position)).First();
+                // the wall's local x is its thickness axis; approach from the road side, 8 m out
+                var toRoad = Vector3.Dot(wall.transform.right, player.transform.position - wall.transform.position) >= 0f ? wall.transform.right : -wall.transform.right;
+                var alongWall = wall.transform.forward;
+                var start = wall.transform.position + toRoad * 8f;
+                start.y = player.transform.position.y + 0.3f;
+                // heading: mostly along the wall, 20 degrees into it
+                var heading = (alongWall * Mathf.Cos(20f * Mathf.Deg2Rad) - toRoad * Mathf.Sin(20f * Mathf.Deg2Rad)).normalized;
+                pBody.position = start;
+                pBody.rotation = Quaternion.LookRotation(heading, Vector3.up);
+                player.transform.SetPositionAndRotation(start, pBody.rotation);
+                pBody.linearVelocity = heading * 40f;
+                pBody.angularVelocity = Vector3.zero;
+                var minSpeed = 40f;
+                var brushEnd = Time.realtimeSinceStartup + 1.6f;
+                while (Time.realtimeSinceStartup < brushEnd)
+                {
+                    minSpeed = Mathf.Min(minSpeed, pBody.linearVelocity.magnitude);
+                    yield return null;
+                }
+                var after = pBody.linearVelocity.magnitude;
+                Check(minSpeed > 15f && after > 15f, "wall brush at 40 m/s kept speed (lowest " + minSpeed.ToString("F1") + ", after 1.6 s " + after.ToString("F1") + " m/s)");
+
+                // back onto the racing line and stopped, so the staged hit below starts from a clean state
+                var respawn = player.GetComponent<CarRespawn>();
+                if (respawn != null) respawn.ForceRespawn();
+                pBody.linearVelocity = Vector3.zero;
+                yield return new WaitForSecondsRealtime(0.6f);
             }
 
             // ---- staged rear-end hit

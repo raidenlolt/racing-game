@@ -10,6 +10,8 @@ namespace SpinMotion
     {
         public GameEvents gameEvents;
         public Button playRaceButton;
+        [Tooltip("Returns to the LevelSelect scene, which is build index 0. QA could not get back to the track list once they were in the car menu.")]
+        public Button backToTracksButton;
         public GameObject menuUI;
         public GameObject raceUI;
 
@@ -19,6 +21,14 @@ namespace SpinMotion
         private void Awake()
         {
             playRaceButton.onClick.AddListener(OnClickPlayRace);
+            if (backToTracksButton != null) backToTracksButton.onClick.AddListener(OnClickBackToTracks);
+        }
+
+        private void OnClickBackToTracks()
+        {
+            // the track picker opens on RaceData.MapSelected, so the current track stays highlighted
+            RaceData.AutoStartRace = false;
+            SceneManager.LoadScene(0);
         }
 
         private void Start()

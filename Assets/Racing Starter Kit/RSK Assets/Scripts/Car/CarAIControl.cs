@@ -49,6 +49,23 @@ namespace SpinMotion
         public GameEvents gameEvents;
         private bool raceHasStarted;
 
+        // the avoidance trigger box only reacts once another car is already inside it, which at the
+        // new speeds is far too late: a bot closing at 40 m/s on a car doing 20 m/s covered the box in
+        // a quarter of a second and rear-ended the player every lap. this looks ahead in proportion to
+        // speed, matches the leader's pace while it is close, and moves out to pass
+        [Header("Look ahead")]
+        [Tooltip("Seconds of travel the forward probe covers. The distance scales with speed.")]
+        public float lookAheadSeconds = 1.6f;
+        public float minLookAhead = 12f;
+        public float maxLookAhead = 90f;
+        [Tooltip("Radius of the forward probe, about half a car width")]
+        public float probeRadius = 1.4f;
+        [Tooltip("Speed margin (mph) kept over the car ahead while following it before a pass opens up")]
+        public float followMargin = 4f;
+        [Tooltip("Lateral offset (m) used to move out and pass")]
+        public float passOffset = 4.5f;
+        private static readonly RaycastHit[] ProbeHits = new RaycastHit[8];
+
         private float m_RandomPerlin;             // A random value for the car to base its wander on (so that AI cars don't all wander in the same pattern)
         private CarController m_CarController;    // Reference to actual car controller we are controlling
         private float m_AvoidOtherCarTime;        // time until which to avoid the car we recently collided with
@@ -166,6 +183,9 @@ namespace SpinMotion
                         break;
                 }
 
+                // a slower car ahead: hold its pace and set up a pass
+                desiredSpeed = LookAhead(desiredSpeed);
+
                 // Evasive action due to collision with other cars:
 
                 // our target position starts off as the 'real' target position
@@ -225,6 +245,49 @@ namespace SpinMotion
             }
         }
 
+
+        /// <summary>
+        /// probes forward for another car. returns the speed to aim for: unchanged when the road is
+        /// clear, otherwise capped near the leader's speed while the gap is closing, and the evasive
+        /// offset is pointed to the freer side so the bot moves out to pass rather than sitting in
+        /// the leader's bumper
+        /// </summary>
+        private float LookAhead(float desiredSpeed)
+        {
+            var mySpeed = m_Rigidbody.linearVelocity.magnitude;          // m/s
+            var distance = Mathf.Clamp(mySpeed * lookAheadSeconds, minLookAhead, maxLookAhead);
+            var origin = transform.position + Vector3.up * 0.6f + transform.forward * 1.5f;
+            var count = Physics.SphereCastNonAlloc(origin, probeRadius, transform.forward, ProbeHits, distance,
+                                                   ~0, QueryTriggerInteraction.Ignore);
+            RaycastHit nearest = default;
+            Rigidbody otherBody = null;
+            var nearestDistance = float.MaxValue;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = ProbeHits[i];
+                if (hit.collider == null || hit.rigidbody == null) continue;
+                if (hit.collider.transform.root == transform.root) continue;
+                if (hit.rigidbody.GetComponent<CarController>() == null) continue;
+                if (hit.distance < nearestDistance) { nearestDistance = hit.distance; nearest = hit; otherBody = hit.rigidbody; }
+            }
+            if (otherBody == null) return desiredSpeed;
+
+            var theirForward = Vector3.Dot(otherBody.linearVelocity, transform.forward);   // m/s along our heading
+            var closing = mySpeed - theirForward;
+            if (closing <= 0f) return desiredSpeed;   // they are pulling away
+
+            // move out to whichever side has the car less in the way
+            var local = transform.InverseTransformPoint(otherBody.position);
+            m_AvoidPathOffset = local.x > 0f ? -passOffset : passOffset;
+            m_AvoidOtherCarTime = Time.time + 0.5f;
+            m_AvoidOtherCarSlowdown = 1f;
+
+            // time to impact at the current closing rate; inside about a second, match their pace
+            var timeToImpact = nearestDistance / Mathf.Max(0.1f, closing);
+            if (timeToImpact > 1.1f) return desiredSpeed;
+            var theirMph = Mathf.Max(0f, theirForward) * 2.23693629f;
+            return Mathf.Min(desiredSpeed, theirMph + followMargin);
+        }
 
         private void OnCollisionStay(Collision col)
         {

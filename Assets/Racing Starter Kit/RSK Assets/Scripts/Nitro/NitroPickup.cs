@@ -40,6 +40,10 @@ namespace SpinMotion
         public AudioClip collectClip;
         [Range(0f, 1f)] public float collectVolume = 0.6f;
 
+        [Header("Artwork")]
+        [Tooltip("Roll applied to the billboard after it turns to the camera, in degrees, counter-clockwise as seen by the player. The current bottle artwork is drawn leaning about 40 degrees to the right; this stands it up. 0 shows the texture as drawn.")]
+        public float visualRollDegrees = 40f;
+
         private Collider trigger;
         private AudioSource audioSource;
         private Vector3 visualHome;
@@ -93,7 +97,9 @@ namespace SpinMotion
             away.y = 0f;   // stay upright; tipping towards a low camera looks like it is falling over
             if (away.sqrMagnitude < 0.0001f) return;
 
-            visual.transform.rotation = Quaternion.LookRotation(away.normalized, Vector3.up);
+            // turn to face the viewer, then roll about the line of sight so the artwork stands up
+            visual.transform.rotation = Quaternion.LookRotation(away.normalized, Vector3.up)
+                                        * Quaternion.Euler(0f, 0f, visualRollDegrees);
         }
 
         /// <summary>
@@ -102,6 +108,16 @@ namespace SpinMotion
         /// </summary>
         private Camera ResolveCamera()
         {
+            // the finish camera takes over the view after the line while the car cameras stay
+            // enabled underneath it, so it is checked first or the bottles would keep facing the
+            // wrong camera and show their mirrored backs during the orbit
+            if (finishCamera == null) finishCamera = FindFirstObjectByType<RaceFinishCamera>();
+            if (finishCamera != null)
+            {
+                var finishView = finishCamera.GetComponent<Camera>();
+                if (finishView != null && finishView.isActiveAndEnabled) return finishView;
+            }
+
             if (viewer != null && viewer.isActiveAndEnabled) return viewer;
 
             viewer = Camera.main;
@@ -117,6 +133,7 @@ namespace SpinMotion
         }
 
         private Camera viewer;
+        private RaceFinishCamera finishCamera;
 
         /// <summary>diagnostic: how many collider entries this bottle has seen, and how many paid out</summary>
         public int EnterCount { get; private set; }
