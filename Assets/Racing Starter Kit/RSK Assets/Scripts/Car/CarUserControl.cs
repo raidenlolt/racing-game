@@ -43,9 +43,9 @@ namespace SpinMotion
             float v = MobileInputManager.GetAxis("Vertical");
 #if !MOBILE_INPUT
             float handbrake = MobileInputManager.GetAxis("Jump");
-            m_Car.Move(h, v, v, handbrake);
+            m_Car.MoveArcade(h, v, v, handbrake);
 #else
-            m_Car.Move(h, v, v, 0f);
+            m_Car.MoveArcade(h, v, v, 0f);
 #endif
         }
     }

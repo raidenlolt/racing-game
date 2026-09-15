@@ -125,9 +125,11 @@ namespace SpinMotion
 
             // ---- QA round 2 wiring
             Check(menu != null && menu.backToTracksButton != null, "menu has a back-to-tracks button");
-            var steerLeft = FindObjectsByType<Image>(FindObjectsSortMode.None).FirstOrDefault(i => i.name == "Icon" && i.transform.parent != null && i.transform.parent.name == "Steer Left Button");
+            // inactive included: MobileControlRig switches the touch rig off in the editor unless the
+            // MOBILE_INPUT define is set, and the wiring is what is being checked, not the platform
+            var steerLeft = FindObjectsByType<Image>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(i => i.name == "Icon" && i.transform.parent != null && i.transform.parent.name == "Steer Left Button");
             Check(steerLeft != null && steerLeft.sprite != null, "steer left pad shows an icon sprite");
-            var gasIcon = FindObjectsByType<Image>(FindObjectsSortMode.None).FirstOrDefault(i => i.name == "Icon" && i.transform.parent != null && i.transform.parent.name == "Throttle Button");
+            var gasIcon = FindObjectsByType<Image>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(i => i.name == "Icon" && i.transform.parent != null && i.transform.parent.name == "Throttle Button");
             Check(gasIcon != null && gasIcon.sprite != null && gasIcon.sprite.name.Contains("Gas"), "gas pad shows the pedal icon");
             var playerCar = FindFirstObjectByType<CarUserControl>();
             Check(playerCar != null && playerCar.GetComponent<WallSlide>() != null, "player car has WallSlide");
@@ -291,6 +293,76 @@ namespace SpinMotion
                     yield return new WaitForSecondsRealtime(0.8f);
                 }
 
+            }
+
+            // ---- handling: full lock through the arcade layer must turn the car without spinning it
+            if (player != null && respawnForFrame != null && wpRoot != null)
+            {
+                var pBody = player.GetComponent<Rigidbody>();
+                var controller = player.GetComponent<CarController>();
+                var wps = new List<Transform>();
+                foreach (Transform t in wpRoot.transform) wps.Add(t);
+                var bestIndex = 0; var bestScore = float.MaxValue;
+                for (int i = 0; i < wps.Count; i++)
+                {
+                    var a = wps[i].position; var b = wps[(i + 1) % wps.Count].position; var c = wps[(i + 2) % wps.Count].position;
+                    var score = Vector3.Angle(b - a, c - b) + (Vector3.Distance(a, b) < 40f ? 100f : 0f);
+                    if (score < bestScore) { bestScore = score; bestIndex = i; }
+                }
+                var segA = wps[bestIndex].position; var segB = wps[(bestIndex + 1) % wps.Count].position;
+                var tangent = segB - segA; tangent.y = 0f; tangent.Normalize();
+
+                player.enabled = false;   // the test drives the car through the same entry point the player uses
+                // speed m/s, seconds of full lock. the slow case is held for less: at 50 deg/s a
+                // 30 m/s car moves 20 m sideways in 1.2 s, which on the narrower tracks is the wall
+                var cases = new[] { new Vector2(30f, 0.8f), new Vector2(80f, 1.2f) };
+                foreach (var h in cases)
+                {
+                    var speed = h.x; var hold = h.y;
+                    var start = (segA + segB) * 0.5f;
+                    start.y = player.transform.position.y;
+                    pBody.position = start;
+                    pBody.rotation = Quaternion.LookRotation(tangent, Vector3.up);
+                    player.transform.SetPositionAndRotation(start, pBody.rotation);
+                    pBody.linearVelocity = tangent * speed;
+                    pBody.angularVelocity = Vector3.zero;
+                    var slideHold = player.GetComponent<WallSlide>();
+                    if (slideHold != null) slideHold.Release();
+                    yield return new WaitForFixedUpdate();
+
+                    var startYaw = player.transform.eulerAngles.y;
+                    var maxSlip = 0f; var maxYawRate = 0f; var minSpeed = speed; var t90 = -1f;
+                    var steps = Mathf.RoundToInt(hold / Time.fixedDeltaTime);
+                    for (int i = 0; i < steps; i++)
+                    {
+                        controller.MoveArcade(1f, 1f, 1f, 0f);   // full right lock, throttle held
+                        yield return new WaitForFixedUpdate();
+                        var v = pBody.linearVelocity; var flat = new Vector3(v.x, 0f, v.z);
+                        if (flat.magnitude > 1f)
+                            maxSlip = Mathf.Max(maxSlip, Vector3.Angle(flat, Vector3.ProjectOnPlane(player.transform.forward, Vector3.up)));
+                        maxYawRate = Mathf.Max(maxYawRate, Mathf.Abs(pBody.angularVelocity.y) * Mathf.Rad2Deg);
+                        minSpeed = Mathf.Min(minSpeed, v.magnitude);
+                        if (t90 < 0f && controller.SteerInput >= 0.9f) t90 = (i + 1) * Time.fixedDeltaTime;
+                    }
+                    var turned = Mathf.Abs(Mathf.DeltaAngle(startYaw, player.transform.eulerAngles.y));
+                    var label = "handling at " + speed + " m/s full lock";
+                    Check(t90 > 0.1f && t90 < 0.4f, label + ": steering reached 90% in " + t90.ToString("F2") + " s (smoothed, not instant)");
+                    // a 2.4 g budget gives about 46 deg/s at 30 m/s and 17 deg/s at 80 m/s
+                    var expectTurn = speed < 50f ? 25f : 12f;
+                    Check(turned > expectTurn, label + ": turned " + turned.ToString("F0") + " degrees in " + hold + " s (expected over " + expectTurn + ")");
+                    Check(maxSlip < 30f, label + ": stayed pointed the way it moves (max slip angle " + maxSlip.ToString("F0") + ")");
+                    Check(maxYawRate < 150f, label + ": no spin (max yaw rate " + maxYawRate.ToString("F0") + " deg/s)");
+                    Check(minSpeed > speed * 0.6f, label + ": kept speed through the turn (lowest " + minSpeed.ToString("F1") + " m/s)");
+
+                    // release: the steering must return to centre on its own
+                    for (int i = 0; i < 20; i++) { controller.MoveArcade(0f, 1f, 1f, 0f); yield return new WaitForFixedUpdate(); }
+                    Check(Mathf.Abs(controller.SteerInput) < 0.05f, label + ": steering returned to centre after release");
+
+                    respawnForFrame.ForceRespawn();
+                    pBody.linearVelocity = Vector3.zero;
+                    yield return new WaitForSecondsRealtime(0.6f);
+                }
+                player.enabled = true;
             }
 
             // ---- staged rear-end hit
