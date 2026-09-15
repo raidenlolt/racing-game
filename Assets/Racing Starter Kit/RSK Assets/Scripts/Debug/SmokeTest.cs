@@ -32,7 +32,9 @@ namespace SpinMotion
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
         {
-            if (!Application.isBatchMode || !File.Exists(FlagPath)) return;
+            // the flag file is the opt-in; it is written by SmokeTestLauncher for a headless run and
+            // by its in-editor menu item, so the same test can be watched in the editor
+            if (!File.Exists(FlagPath)) return;
             File.Delete(FlagPath);
             var go = new GameObject("Smoke Test");
             DontDestroyOnLoad(go);
@@ -41,6 +43,8 @@ namespace SpinMotion
 
         private void Awake()
         {
+            // an unfocused editor stalls the player loop; the test must keep ticking regardless
+            Application.runInBackground = true;
             Application.logMessageReceived += OnLog;
             events = AssetDatabase.LoadAssetAtPath<GameEvents>(
                 "Assets/Racing Starter Kit/RSK Assets/ScriptableObjects/GameEvents.asset");
@@ -128,7 +132,7 @@ namespace SpinMotion
             var playerCar = FindFirstObjectByType<CarUserControl>();
             Check(playerCar != null && playerCar.GetComponent<WallSlide>() != null, "player car has WallSlide");
             Check(playerCar != null && playerCar.GetComponent<Rigidbody>().collisionDetectionMode == CollisionDetectionMode.ContinuousDynamic, "player car uses continuous dynamic collision");
-            var walls = FindObjectsByType<BoxCollider>(FindObjectsSortMode.None).Where(b => b.name.StartsWith("Wall")).ToList();
+            var walls = FindObjectsByType<Collider>(FindObjectsSortMode.None).Where(b => b.name.StartsWith("Wall") && !b.isTrigger).ToList();
             Check(walls.Count == 0 || walls.All(w => w.sharedMaterial != null && w.sharedMaterial.dynamicFriction < 0.01f), walls.Count + " perimeter walls carry the frictionless material");
 
             // ---- countdown: watch for launches and for bots creeping
@@ -182,39 +186,111 @@ namespace SpinMotion
                 yield return new WaitForSecondsRealtime(1.5f);
             }
 
-            // ---- wall brush: a shallow hit on a perimeter wall must keep most of the speed
-            var wallsAll = FindObjectsByType<BoxCollider>(FindObjectsSortMode.None).Where(b => b.name.StartsWith("Wall")).ToList();
-            if (player != null && wallsAll.Count > 0)
+            // ---- wall brush: a shallow hit on the trackside must keep most of the speed and hold the
+            // car along the wall. framed by the racing line on a straight, whatever the wall is made of
+            var respawnForFrame = player != null ? player.GetComponent<CarRespawn>() : null;
+            var wpRoot = FindFirstObjectByType<AIWaypoints>();
+            if (player != null && respawnForFrame != null && wpRoot != null)
             {
                 var pBody = player.GetComponent<Rigidbody>();
-                var wall = wallsAll.OrderBy(w => Vector3.Distance(w.transform.position, player.transform.position)).First();
-                // the wall's local x is its thickness axis; approach from the road side, 8 m out
-                var toRoad = Vector3.Dot(wall.transform.right, player.transform.position - wall.transform.position) >= 0f ? wall.transform.right : -wall.transform.right;
-                var alongWall = wall.transform.forward;
-                var start = wall.transform.position + toRoad * 8f;
-                start.y = player.transform.position.y + 0.3f;
-                // heading: mostly along the wall, 20 degrees into it
-                var heading = (alongWall * Mathf.Cos(20f * Mathf.Deg2Rad) - toRoad * Mathf.Sin(20f * Mathf.Deg2Rad)).normalized;
-                pBody.position = start;
-                pBody.rotation = Quaternion.LookRotation(heading, Vector3.up);
-                player.transform.SetPositionAndRotation(start, pBody.rotation);
-                pBody.linearVelocity = heading * 40f;
-                pBody.angularVelocity = Vector3.zero;
-                var minSpeed = 40f;
-                var brushEnd = Time.realtimeSinceStartup + 1.6f;
-                while (Time.realtimeSinceStartup < brushEnd)
+                var wps = new List<Transform>();
+                foreach (Transform t in wpRoot.transform) wps.Add(t);
+                // the straightest long segment: neighbours within 4 degrees
+                var bestIndex = 0; var bestScore = float.MaxValue;
+                for (int i = 0; i < wps.Count; i++)
                 {
-                    minSpeed = Mathf.Min(minSpeed, pBody.linearVelocity.magnitude);
-                    yield return null;
+                    var a = wps[i].position; var b = wps[(i + 1) % wps.Count].position; var c = wps[(i + 2) % wps.Count].position;
+                    var z = wps[(i - 1 + wps.Count) % wps.Count].position;
+                    var score = Vector3.Angle(b - a, c - b) + Vector3.Angle(a - z, b - a);
+                    if (Vector3.Distance(a, b) < 40f) score += 100f;
+                    if (score < bestScore) { bestScore = score; bestIndex = i; }
                 }
-                var after = pBody.linearVelocity.magnitude;
-                Check(minSpeed > 15f && after > 15f, "wall brush at 40 m/s kept speed (lowest " + minSpeed.ToString("F1") + ", after 1.6 s " + after.ToString("F1") + " m/s)");
+                var segA = wps[bestIndex].position; var segB = wps[(bestIndex + 1) % wps.Count].position;
+                var tangent = (segB - segA); tangent.y = 0f; tangent.Normalize();
+                var onLine = (segA + segB) * 0.5f;
+                var toWall = Vector3.Cross(Vector3.up, tangent);   // the right-hand side
+                RaycastHit face;
+                var found = Physics.Raycast(onLine + Vector3.up * 1f, toWall, out face, 80f, ~0, QueryTriggerInteraction.Ignore);
+                var wallDistance = found ? face.distance : 20f;
+                var wallName = found ? face.collider.name : "nothing";
+                // the trackside may be a drop rather than a face: walk outwards and stop where the
+                // surface under the probe is no longer road, or steps by more than a metre
+                var baseY = onLine.y;
+                RaycastHit ground;
+                if (Physics.Raycast(onLine + Vector3.up * 5f, Vector3.down, out ground, 30f, ~0, QueryTriggerInteraction.Ignore)) baseY = ground.point.y;
+                for (var d = 2f; d < wallDistance; d += 0.5f)
+                {
+                    var probe = onLine + toWall * d + Vector3.up * 5f;
+                    var onRoad = Physics.Raycast(probe, Vector3.down, out ground, 30f, ~0, QueryTriggerInteraction.Ignore)
+                                 && ground.collider.name.StartsWith("road", System.StringComparison.OrdinalIgnoreCase)
+                                 && Mathf.Abs(ground.point.y - baseY) < 1f;
+                    if (onRoad) continue;
+                    wallDistance = d;
+                    wallName += " / road edge";
+                    break;
+                }
 
-                // back onto the racing line and stopped, so the staged hit below starts from a clean state
-                var respawn = player.GetComponent<CarRespawn>();
-                if (respawn != null) respawn.ForceRespawn();
-                pBody.linearVelocity = Vector3.zero;
-                yield return new WaitForSecondsRealtime(0.6f);
+                var slide = player.GetComponent<WallSlide>();
+                var cases = new[] { new Vector2(40f, 20f), new Vector2(75f, 40f) };   // speed m/s, angle into the wall
+                foreach (var brush in cases)
+                {
+                    var speed = brush.x; var angle = brush.y;
+                    var start = onLine + toWall * (wallDistance - 8f);
+                    start.y = player.transform.position.y;
+                    var heading = (tangent * Mathf.Cos(angle * Mathf.Deg2Rad) + toWall * Mathf.Sin(angle * Mathf.Deg2Rad)).normalized;
+                    pBody.position = start;
+                    pBody.rotation = Quaternion.LookRotation(heading, Vector3.up);
+                    player.transform.SetPositionAndRotation(start, pBody.rotation);
+                    pBody.linearVelocity = heading * speed;
+                    pBody.angularVelocity = Vector3.zero;
+                    yield return new WaitForFixedUpdate();   // let the slide record the entry speed and direction
+
+                    var minSpeed = speed; var maxAway = 0f; var maxUp = 0f; var minAlong = speed; var maxYaw = 0f;
+                    var trace = new System.Text.StringBuilder();
+                    var brushEnd = Time.realtimeSinceStartup + 1.6f;
+                    var nextSample = 0f;
+                    var touched = false;
+                    while (Time.realtimeSinceStartup < brushEnd)
+                    {
+                        var v = pBody.linearVelocity;
+                        var along = Vector3.Dot(v, tangent);
+                        var away = -Vector3.Dot(v, toWall);
+                        var yaw = Vector3.SignedAngle(tangent, Vector3.ProjectOnPlane(player.transform.forward, Vector3.up), Vector3.up);
+                        if (slide != null && slide.IsSliding) touched = true;
+                        if (touched)
+                        {
+                            minSpeed = Mathf.Min(minSpeed, v.magnitude);
+                            minAlong = Mathf.Min(minAlong, along);
+                            maxAway = Mathf.Max(maxAway, away);
+                            maxUp = Mathf.Max(maxUp, v.y);
+                            maxYaw = Mathf.Max(maxYaw, Mathf.Abs(yaw));
+                        }
+                        if (Time.realtimeSinceStartup >= nextSample)
+                        {
+                            nextSample = Time.realtimeSinceStartup + 0.1f;
+                            var gap = wallDistance - Vector3.Dot(pBody.position - onLine, toWall);
+                            trace.Append(" [gap " + gap.ToString("F1") + " along " + along.ToString("F0") + " away " + away.ToString("F1") + " yaw " + yaw.ToString("F0")
+                                         + (slide != null && slide.IsSliding ? " on " + slide.LastContactName + (slide.LastFrameTrusted ? " T" : " road") : "") + "]");
+                        }
+                        yield return null;
+                    }
+                    var after = pBody.linearVelocity.magnitude;
+                    var label = "wall brush " + speed + " m/s at " + angle + " deg";
+                    var keep = angle < 30f ? 15f : 10f;
+                    Check(touched, label + " touched the wall");
+                    Check(minSpeed > keep && after > keep, label + " kept speed (lowest " + minSpeed.ToString("F1") + ", after 1.6 s " + after.ToString("F1") + " m/s)");
+                    Check(minAlong > 0f, label + " never went backwards along the wall (min along " + minAlong.ToString("F1") + " m/s)");
+                    Check(maxYaw < 60f, label + " never turned past 60 degrees (max " + maxYaw.ToString("F0") + ")");
+                    Check(maxAway < 6f, label + " did not launch the car back (max away " + maxAway.ToString("F1") + " m/s)");
+                    Check(maxUp < 3f, label + " did not launch the car upward (max vertical " + maxUp.ToString("F1") + " m/s)");
+                    lines.Add("   wall face " + wallName + " at " + wallDistance.ToString("F1") + " m from the line, straightness " + bestScore.ToString("F0"));
+                    lines.Add("   trace:" + trace);
+
+                    respawnForFrame.ForceRespawn();
+                    pBody.linearVelocity = Vector3.zero;
+                    yield return new WaitForSecondsRealtime(0.8f);
+                }
+
             }
 
             // ---- staged rear-end hit
@@ -294,7 +370,8 @@ namespace SpinMotion
             lines.Add(failures == 0 ? "RESULT PASS" : "RESULT FAIL (" + failures + ")");
             File.WriteAllLines(ReportPath, lines);
             Debug.Log("[Smoke] " + lines[lines.Count - 1]);
-            EditorApplication.Exit(failures == 0 ? 0 : 1);
+            if (Application.isBatchMode) EditorApplication.Exit(failures == 0 ? 0 : 1);
+            else EditorApplication.ExitPlaymode();
         }
     }
 }

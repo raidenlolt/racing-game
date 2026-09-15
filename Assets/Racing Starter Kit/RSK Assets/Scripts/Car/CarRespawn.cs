@@ -280,6 +280,19 @@ namespace SpinMotion
         /// height is dropped from the comparison because a car in the air over the track is still on
         /// the track, and the waypoints sit 1.6 m up regardless.
         /// </summary>
+        /// <summary>
+        /// public face of the racing-line query for other components on the car. WallSlide uses it to
+        /// learn which way the wall runs, since every wall and railing follows the road
+        /// </summary>
+        public bool TryGetRacingLine(Vector3 position, out Vector3 closest, out Vector3 forward)
+        {
+            closest = position;
+            forward = transform.forward;
+            if (aiWaypointSet == null || aiWaypointSet.Items.Count < 2) return false;
+            DistanceFromRacingLine(position, out closest, out forward);
+            return true;
+        }
+
         private float DistanceFromRacingLine(Vector3 position, out Vector3 closest, out Vector3 forward)
         {
             var items = aiWaypointSet.Items;
@@ -350,6 +363,9 @@ namespace SpinMotion
             lastMovingTime = Time.time;
             throttledStuckSince = -1f;
             RespawnCount++;
+
+            var slide = GetComponent<WallSlide>();
+            if (slide != null) slide.Release();
         }
     }
 }

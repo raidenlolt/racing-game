@@ -167,15 +167,13 @@ namespace SpinMotion.EditorTools
         /// track" report. sinking them well under the tarmac closes it for good.
         /// </summary>
         private const float WallSink = 4f;
-        /// <summary>how far beyond the measured road edge the wall sits</summary>
-        private const float WallMargin = 5f;
         /// <summary>
-        /// how far each wall runs past its segment, in metres, so corners do not leave a wedge gap.
-        /// this is deliberately an absolute pad and not a multiplier: a 1.35x multiplier turned the
-        /// 127m straight into a 172m wall whose 45m of overshoot cut straight across the next corner
-        /// and sealed the track shut
+        /// how far beyond the measured road edge the wall sits. it was 5 m, which on Race_Track_02
+        /// put the wall 5 m past a 6 m drop at the slab edge: a car that brushed the railing went
+        /// over the lip, wedged on it and stopped dead, or was flicked back. the wall now stands at
+        /// the edge itself, and the off-road push below still keeps it off the tarmac
         /// </summary>
-        private const float WallCornerPad = 3f;
+        private const float WallMargin = 0.5f;
 
         /// <summary>
         /// longest wall segment. the line is resampled to this so walls follow curves instead of
@@ -212,6 +210,12 @@ namespace SpinMotion.EditorTools
         public static void BuildPerimeterWallsMenu()
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            BuildAllScenes();
+        }
+
+        /// <summary>every track, no prompt; the batch and bridge entry point</summary>
+        public static void BuildAllScenes()
+        {
             foreach (var scenePath in TargetScenes)
             {
                 var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
@@ -245,68 +249,152 @@ namespace SpinMotion.EditorTools
             {
                 var root = new GameObject(WallRoot);
                 made = 0;
-                for (int i = 0; i < line.Count; i++)
-                {
-                    var a = line[i];
-                    var b = line[(i + 1) % line.Count];
-                    var mid = (a + b) * 0.5f;
-                    var fwd = b - a; fwd.y = 0f;
-                    var length = fwd.magnitude;
-                    if (length < 0.5f) continue;
-                    fwd /= length;
-                    var right = Vector3.Cross(Vector3.up, fwd);
-
-                    made += Wall(root.transform, mid, fwd, right, length, +1, line);
-                    made += Wall(root.transform, mid, fwd, right, length, -1, line);
-                }
+                made += Ribbon(root.transform, line, +1);
+                made += Ribbon(root.transform, line, -1);
             }
             finally
             {
                 foreach (var c in borrowed) if (c != null) Object.DestroyImmediate(c);
             }
             Debug.Log("[Walls] measured against " + borrowed.Count + " temporary road collider(s); " +
-                      wallsDropped + " segment(s) dropped for sitting on the tarmac");
+                      wallsDropped + " point(s) pushed off the tarmac");
             return made;
         }
 
-        private static int Wall(Transform parent, Vector3 mid, Vector3 fwd, Vector3 right, float length, int side,
-                                List<Vector3> line)
+        private const string GeneratedFolder = "Assets/Racing_Track_Pack/Generated";
+        private const string WallMaterialPath = "Assets/Settings/Wall.physicMaterial";
+
+        /// <summary>
+        /// one continuous wall down one side of the circuit, as a single mesh collider.
+        ///
+        /// the walls used to be a chain of box segments, each padded 3 m past its span so corners left
+        /// no gap. that pad is what launched cars: at a bend the padded end of one box protrudes past
+        /// the next, and a car sliding along the railing meets that end face head on. traced on
+        /// Race_Track_02, the car slid cleanly along the railing for a second and then hit "Wall L"
+        /// with a normal pointing along the road, an end cap, and left the wall at 12 m/s. a ribbon
+        /// has no ends: every point on it faces the road and its joints are continuous.
+        ///
+        /// the offset per point is measured the same way the boxes were, then smoothed so a bend does
+        /// not fold the ribbon over itself
+        /// </summary>
+        private static int Ribbon(Transform parent, List<Vector3> line, int side)
         {
-            var offset = RoadEdgeDistance(mid, right * side) + WallMargin;
-            var position = mid + right * side * offset;
+            var count = line.Count;
+            var outward = new List<Vector3>(count);
+            var offsets = new List<float>(count);
 
-            // backstop: on a corner tighter than the offset, the offset point crosses the centre of
-            // the turn and lands on or past the racing line. push any such wall back out to a
-            // guaranteed clearance, keeping it on the side it belongs to.
-            var clearance = DistanceToLine(position, line);
-            if (clearance < MinWallClearance)
+            for (int i = 0; i < count; i++)
             {
-                var away = position - ClosestPointOnLine(position, line);
-                away.y = 0f;
-                // a wall sitting exactly on the line has no side to preserve, so fall back to normal
-                if (away.sqrMagnitude < 0.01f) away = right * side;
-                position = ClosestPointOnLine(position, line) + away.normalized * MinWallClearance;
-                position.y = mid.y;
+                var prev = line[(i - 1 + count) % count];
+                var next = line[(i + 1) % count];
+                var fwd = next - prev; fwd.y = 0f;
+                if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.forward;
+                fwd.Normalize();
+                var right = Vector3.Cross(Vector3.up, fwd) * side;
+                outward.Add(right);
+                offsets.Add(RoadEdgeDistance(line[i], right) + WallMargin);
             }
 
-            var rotation = Quaternion.LookRotation(fwd, Vector3.up);
-            var size = new Vector3(WallThickness, WallHeight, length + WallCornerPad * 2f);
-
-            // never leave a wall standing on the racing surface, whatever the probe above measured
-            if (!ClearOfRoad(position, rotation, size, right * side, out position))
+            // smooth the offset so neighbouring points agree; a wall that steps in and out by
+            // metres between points is a wall with faces the car can catch on
+            for (int pass = 0; pass < 3; pass++)
             {
-                wallsDropped++;
-                return 0;
+                var smoothed = new List<float>(count);
+                for (int i = 0; i < count; i++)
+                    smoothed.Add((offsets[(i - 1 + count) % count] + offsets[i] * 2f + offsets[(i + 1) % count]) * 0.25f);
+                offsets = smoothed;
             }
+
+            var points = new List<Vector3>(count);
+            for (int i = 0; i < count; i++)
+            {
+                var position = line[i] + outward[i] * offsets[i];
+
+                // backstop against the offset folding across the centre of a tight bend
+                if (DistanceToLine(position, line) < MinWallClearance)
+                {
+                    var away = position - ClosestPointOnLine(position, line);
+                    away.y = 0f;
+                    if (away.sqrMagnitude < 0.01f) away = outward[i];
+                    position = ClosestPointOnLine(position, line) + away.normalized * MinWallClearance;
+                }
+
+                // never on the tarmac: step outwards until there is no road under the point
+                var pushed = 0f;
+                while (IsOverRoad(position) && pushed < MaxRoadPush)
+                {
+                    position += outward[i];
+                    pushed += 1f;
+                }
+                if (pushed > 0f) wallsDropped++;
+
+                position.y = line[i].y;
+                // drop a point that lands on top of the previous one, which would make a zero-width face
+                if (points.Count > 0 && Vector3.Distance(points[points.Count - 1], position) < 1.5f) continue;
+                points.Add(position);
+            }
+            if (points.Count < 3) return 0;
+
+            var mesh = BuildRibbonMesh(points, line);
+            var sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            SpinMotion.EditorTools.VfxMaterials.EnsureFolder(GeneratedFolder);
+            var assetPath = GeneratedFolder + "/" + sceneName + (side > 0 ? " Wall R" : " Wall L") + ".asset";
+            AssetDatabase.CreateAsset(mesh, assetPath);
 
             var go = new GameObject(side > 0 ? "Wall R" : "Wall L");
             go.transform.SetParent(parent, false);
-            // bottom sits at mid.y - WallSink, i.e. under the tarmac, so there is no gap to wedge into
-            go.transform.position = position + Vector3.up * (WallHeight * 0.5f - WallSink);
-            go.transform.rotation = rotation;
-            var box = go.AddComponent<BoxCollider>();
-            box.size = size;
-            return 1;
+            var collider = go.AddComponent<MeshCollider>();
+            collider.sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(assetPath);
+            collider.convex = false;
+            var material = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(WallMaterialPath);
+            if (material != null) collider.sharedMaterial = material;
+            return points.Count;
+        }
+
+        /// <summary>
+        /// a closed quad strip, bottom edge sunk WallSink under the line and the top WallHeight above
+        /// that. faces are wound so their normal points at the racing line, which is what lets
+        /// CarRespawn's line-to-car raycast see the wall from the road side
+        /// </summary>
+        private static Mesh BuildRibbonMesh(List<Vector3> points, List<Vector3> line)
+        {
+            var n = points.Count;
+            var vertices = new Vector3[n * 2];
+            for (int i = 0; i < n; i++)
+            {
+                vertices[i * 2] = points[i] - Vector3.up * WallSink;
+                vertices[i * 2 + 1] = points[i] + Vector3.up * (WallHeight - WallSink);
+            }
+
+            var triangles = new List<int>(n * 6);
+            for (int i = 0; i < n; i++)
+            {
+                var j = (i + 1) % n;
+                int b0 = i * 2, t0 = i * 2 + 1, b1 = j * 2, t1 = j * 2 + 1;
+
+                // which way does (b0, t0, b1) face? flip if that is away from the road
+                var normal = Vector3.Cross(vertices[t0] - vertices[b0], vertices[b1] - vertices[b0]);
+                var toRoad = ClosestPointOnLine(points[i], line) - points[i];
+                var facesRoad = Vector3.Dot(normal, toRoad) >= 0f;
+                if (facesRoad)
+                {
+                    triangles.Add(b0); triangles.Add(t0); triangles.Add(b1);
+                    triangles.Add(t0); triangles.Add(t1); triangles.Add(b1);
+                }
+                else
+                {
+                    triangles.Add(b0); triangles.Add(b1); triangles.Add(t0);
+                    triangles.Add(t0); triangles.Add(b1); triangles.Add(t1);
+                }
+            }
+
+            var mesh = new Mesh { name = "Perimeter Wall" };
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         /// <summary>
@@ -466,44 +554,6 @@ namespace SpinMotion.EditorTools
 
         /// <summary>walls dropped in the current build because they could not be got off the road</summary>
         private static int wallsDropped;
-
-        /// <summary>
-        /// the last word on wall placement: a wall must never stand on the racing surface.
-        ///
-        /// the offset above is a measurement and measurements can be wrong, so the finished box is
-        /// tested against the road colliders themselves and pushed outwards until it is clear. a
-        /// wall that cannot be cleared is dropped rather than shipped -- a gap in the perimeter is
-        /// caught by the safety floor and by CarRespawn, whereas an invisible wall across the tarmac
-        /// is exactly the "stuck in a random collider" the fix exists to remove.
-        /// </summary>
-        private static bool ClearOfRoad(Vector3 start, Quaternion rotation, Vector3 size, Vector3 outward,
-                                        out Vector3 result)
-        {
-            result = start;
-
-            outward.y = 0f;
-            if (outward.sqrMagnitude < 0.0001f) outward = Vector3.right;
-            outward.Normalize();
-
-            var half = size * 0.5f;
-            for (var push = 0f; push <= MaxRoadPush; push += 1f)
-            {
-                var candidate = start + outward * push;
-                var centre = candidate + Vector3.up * (WallHeight * 0.5f - WallSink);
-                if (TouchesRoad(centre, half, rotation)) continue;
-
-                result = candidate;
-                return true;
-            }
-            return false;
-        }
-
-        private static bool TouchesRoad(Vector3 centre, Vector3 half, Quaternion rotation)
-        {
-            foreach (var c in Physics.OverlapBox(centre, half, rotation, ~0, QueryTriggerInteraction.Ignore))
-                if (c.gameObject.name.ToLower().StartsWith("road")) return true;
-            return false;
-        }
 
         /// <summary>the racing line, taken from the AI waypoints in their numbered order</summary>
         private static List<Vector3> OrderedWaypoints()

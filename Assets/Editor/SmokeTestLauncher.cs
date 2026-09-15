@@ -23,6 +23,15 @@ namespace SpinMotion.EditorTools
         public const string FlagPath = "Library/smoke_test.flag";
         public const string ReportPath = "Library/smoke_report.txt";
 
+        /// <summary>the same test on whatever scene is open, watched in the editor; leaves play mode when done</summary>
+        [MenuItem("Tools/Racing/Run Smoke Test In Editor")]
+        public static void RunHere()
+        {
+            if (File.Exists(ReportPath)) File.Delete(ReportPath);
+            File.WriteAllText(FlagPath, UnityEngine.SceneManagement.SceneManager.GetActiveScene().path);
+            EditorApplication.EnterPlaymode();
+        }
+
         public static void Run()
         {
             var args = Environment.GetCommandLineArgs();
