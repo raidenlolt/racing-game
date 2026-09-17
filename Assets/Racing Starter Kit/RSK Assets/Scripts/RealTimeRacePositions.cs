@@ -53,6 +53,8 @@ namespace SpinMotion
         /// <summary>distance from the first point to each point; the last entry is the lap length</summary>
         private float[] lineArc;
         private float lapLength;
+        /// <summary>length of one lap along the racing line, in metres, once the line is built</summary>
+        public float LapLength { get { return lapLength; } }
         /// <summary>where the start/finish line falls on the racing line, so progress is measured from it</summary>
         private float finishLineArc;
 

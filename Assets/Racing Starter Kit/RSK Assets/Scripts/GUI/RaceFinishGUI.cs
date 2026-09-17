@@ -48,7 +48,10 @@ namespace SpinMotion
             raceFinishPanel.SetActive(true);
 
             var playerRacePos = realTimeRacePositions.Item.GetPlayerRacePosition(0);
-            var playerScore = realTimeRacePositions.Item.RacePositionTotalScores[0];
+            // the same number the platform receives: points by place, partial credit on a timeout
+            var fieldSize = realTimeRacePositions.Item.RacePositionTotalScores.Count;
+            var progress = RaceScore.ProgressFraction(realTimeRacePositions.Item, 0);
+            double playerScore = RaceScore.Compute(raceFinishType, playerRacePos, fieldSize, progress);
 
             if (reveal != null) StopCoroutine(reveal);
             reveal = StartCoroutine(Reveal(playerRacePos, playerScore));

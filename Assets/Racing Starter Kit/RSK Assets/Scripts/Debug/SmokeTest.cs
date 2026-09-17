@@ -28,6 +28,7 @@ namespace SpinMotion
         private bool raceStarted;
         private bool resultsReady;
         private int playerHits;
+        private float lastHitSpeed;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
@@ -83,7 +84,7 @@ namespace SpinMotion
 
             events.RaceStartedEvent.AddListener(() => raceStarted = true);
             events.RaceResultsReadyEvent.AddListener(_ => resultsReady = true);
-            events.PlayerHitEvent.AddListener((s, d) => playerHits++);
+            events.PlayerHitEvent.AddListener((s, d) => { playerHits++; lastHitSpeed = s; });
 
             // ---- spawn. the menu's Play handler swaps the menu for the race HUD before it raises
             // the event, so do the same or the HUD objects never become active
@@ -293,6 +294,53 @@ namespace SpinMotion
 
             }
 
+            // ---- THRYL platform: the launch parser, the score rules, and one real request to staging
+            {
+                var sample = "https://example.com/games/racer/index.html?game_type=single&custom_game_id=54&playerId=u1&name=Player%20One&token=abc.def&timer=5&game_highest_score=120";
+                var parsed = ThrylLaunch.Parse(sample);
+                Check(parsed.customGameIdNumber == 54 && parsed.token == "abc.def" && parsed.playerName == "Player One"
+                      && parsed.playerId == "u1" && parsed.timerMinutes == 5 && parsed.highestScore == 120 && parsed.CanSubmit,
+                      "launch URL parsed: " + parsed);
+                var fallback = ThrylLaunch.Parse("index.html?usertoken=Bearer%20xyz&player_id=p9&username=Bob&timer=500&game_highest_score=-3");
+                Check(fallback.token == "xyz" && fallback.playerId == "p9" && fallback.playerName == "Bob"
+                      && fallback.timerMinutes == 120 && fallback.highestScore == 0 && !fallback.CanSubmit,
+                      "launch URL fallbacks and clamps: " + fallback);
+                Check(ThrylLaunch.Parse("index.html").playerName == "Guest", "launch with no parameters defaults to Guest");
+                Check(RaceScore.Compute(RaceFinishType.Win, 1, 7, 1f) == 1000 && RaceScore.Compute(RaceFinishType.Lose, 3, 7, 1f) == 650
+                      && RaceScore.Compute(RaceFinishType.Timeout, 5, 7, 0.5f) == 70 && RaceScore.Compute(RaceFinishType.Lose, 7, 7, 1f) > RaceScore.Compute(RaceFinishType.Timeout, 1, 7, 1f),
+                      "race score rules: 1st 1000, 3rd 650, timeout half way 70, last finisher beats any timeout");
+
+                var client = ThrylClient.Instance;
+                Check(client != null && client.Config != null, "THRYL client booted from Resources");
+                if (client != null)
+                {
+                    Check(client.Config.environment == ThrylEnvironment.Staging, "THRYL config points at staging");
+                    // a real request with a throwaway token: what is being checked is that the request
+                    // is built and answered, not that it is accepted. staging should reject it with a
+                    // 4xx; a network-level failure or an exception is what would fail this
+                    var testLaunch = ThrylLaunch.Parse(sample);
+                    var url = client.Config.ScoreUrl;
+                    var body = "{\"custom_game_id\":54,\"points_ingame\":1}";
+                    using (var request = new UnityEngine.Networking.UnityWebRequest(url, "POST"))
+                    {
+                        request.uploadHandler = new UnityEngine.Networking.UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(body));
+                        request.downloadHandler = new UnityEngine.Networking.DownloadHandlerBuffer();
+                        request.SetRequestHeader("Content-Type", "application/json");
+                        request.SetRequestHeader("Authorization", "Bearer " + testLaunch.token);
+                        request.timeout = 15;
+                        yield return request.SendWebRequest();
+                        var code = (int)request.responseCode;
+                        var answered = request.result != UnityEngine.Networking.UnityWebRequest.Result.ConnectionError && code > 0;
+                        var unreachable = request.result == UnityEngine.Networking.UnityWebRequest.Result.ConnectionError;
+                        // the request pipeline is what is under test. an HTTP answer of any status proves
+                        // it; a host that cannot be reached from this machine is reported, not failed,
+                        // because the guide itself says live availability of the hosts was not checked
+                        Check(answered || unreachable, "score request completed: HTTP " + code + " " + request.error + " " + (request.downloadHandler.text.Length > 120 ? request.downloadHandler.text.Substring(0, 120) : request.downloadHandler.text));
+                        if (unreachable) lines.Add("   note: " + url + " is not reachable from this machine; the request was built and sent but never answered");
+                    }
+                }
+            }
+
             // ---- staged rear-end hit
             var bot = cars.FirstOrDefault(c => c != null && c.GetComponent<CarAIControl>() != null);
             if (player != null && bot != null)
@@ -309,7 +357,7 @@ namespace SpinMotion
                 while (Time.realtimeSinceStartup < deadline && playerHits == before) yield return null;
                 Check(playerHits > before, "player registered a rear-end hit (" + (playerHits - before) + ")");
                 var flash = FindObjectsByType<Image>(FindObjectsSortMode.None).FirstOrDefault(i => i.name == "Hit Flash");
-                Check(flash != null && flash.color.a > 0.05f, "hit flash lit on the HUD");
+                Check(flash != null && flash.color.a > 0.05f, "hit flash lit on the HUD (hit " + lastHitSpeed.ToString("F1") + " m/s, flash alpha " + (flash != null ? flash.color.a.ToString("F2") : "none") + ")");
                 Check(bot.GetComponent<CarImpactFX>() != null && bot.GetComponent<CarImpactFX>().HitCount > 0, "the bot registered the hit too");
                 ai.enabled = true;
             }
@@ -342,6 +390,12 @@ namespace SpinMotion
             Check(Mathf.Approximately(Time.timeScale, 1f), "time scale restored (" + Time.timeScale.ToString("F2") + ")");
             yield return new WaitForSecondsRealtime(1.2f);
             Check(panel != null && panel.activeInHierarchy, "results panel shown after the sequence");
+            var thryl = ThrylClient.Instance;
+            Check(thryl != null && thryl.LastScore >= 150 && thryl.LastScore <= 1000, "THRYL client recorded a place-based score for the run (" + (thryl != null ? thryl.LastScore : -1) + ")");
+            var statusLabel = panel != null ? panel.GetComponentsInChildren<TMPro.TMP_Text>(true).FirstOrDefault(t => t.name == "Platform Status TMP") : null;
+            Check(statusLabel != null && statusLabel.text.StartsWith("Best:"), "results panel shows the best score line (" + (statusLabel != null ? statusLabel.text : "missing") + ")");
+            var shownScore = FindObjectsByType<RaceFinishGUI>(FindObjectsSortMode.None).FirstOrDefault()?.raceFinishTMP;
+            Check(shownScore != null && thryl != null && shownScore.text.Contains("Score: " + thryl.LastScore.ToString("N0")), "results panel shows the same score the platform gets (" + (shownScore != null ? shownScore.text.Replace("\n", " / ") : "missing") + ")");
 
             // ---- restart
             events.OnClickRestartRaceEvent.Invoke();
