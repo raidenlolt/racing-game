@@ -111,6 +111,3 @@ InitTestScene*.unity*
 .codex/
 # QA screen recordings dropped in for review, never part of the project
 /feedback/
-
-# written and removed by the Unity test framework during play-mode test runs
-/[Aa]ssets/[Rr]esources/PerformanceTestRun*

@@ -39,32 +39,6 @@ namespace SpinMotion
         [SerializeField] private float m_SlipLimit;
         [SerializeField] private float m_BrakeTorque;
         
-        // the player's steering used to reach the wheels raw. on a phone the LEFT and RIGHT pads
-        // write a full 1 or -1 into the axis with no ramp, so every touch was instant full lock, at
-        // any speed. full lock at 190 mph saturates the tyres and the car snaps sideways; that is
-        // most of what players meant by "the handling is very difficult". MoveArcade shapes the
-        // input first: it ramps towards the pad, and it scales the lock down as speed rises
-        [Header("Arcade steering (player input only)")]
-        [Tooltip("Seconds for the steering to go from centre to full lock when a pad is held")]
-        public float steerRiseSeconds = 0.22f;
-        [Tooltip("Seconds for the steering to return to centre once released")]
-        public float steerReturnSeconds = 0.12f;
-        // with the steer helper and the lateral grip assist the car turns at very nearly the
-        // kinematic rate for its wheel angle, whatever the tyres would have allowed. so the lock
-        // angle is the handling: the lock is scaled so that the turn it commands never asks for more
-        // than this much lateral acceleration. full lock is kept at low speed, where the budget is
-        // not the limit
-        [Tooltip("Lateral acceleration (m/s^2) full lock is allowed to command. Arcade rather than real: measured, 55 turns a 30 m/s car at about 55 deg/s with no slip, and an 80 m/s car at about 25 deg/s.")]
-        public float steerLateralBudget = 55f;
-        [Tooltip("Share of full lock always kept, so the wheel never goes numb at top speed")]
-        [Range(0.02f, 1f)] public float minSteerFraction = 0.06f;
-        private float wheelbase = 2.6f;
-
-        /// <summary>the shaped steering the player is asking for, -1..1, before the speed scaling</summary>
-        public float SteerInput { get; private set; }
-        /// <summary>true once MoveArcade has driven this car, so assists know SteerInput is live</summary>
-        public bool HasArcadeInput { get; private set; }
-
         [Header("Flipping")]
         [SerializeField] private float m_WaitTimeBeforeFlip = 2.5f; // Seconds to wait before auto-flipping
         private float m_FlippedTimer = 0f;
@@ -140,13 +114,6 @@ namespace SpinMotion
 
             m_Rigidbody = GetComponent<Rigidbody>();
             m_CurrentTorque = m_FullTorqueOverAllWheels - (m_TractionControl*m_FullTorqueOverAllWheels);
-
-            // front and rear axle spacing, for the lock scaling. wheels 0/1 are the front pair
-            if (m_WheelColliders[0] != null && m_WheelColliders[2] != null)
-            {
-                var span = Mathf.Abs(m_WheelColliders[0].transform.localPosition.z - m_WheelColliders[2].transform.localPosition.z);
-                if (span > 1f) wheelbase = span;
-            }
         }
 
         private void Update()
@@ -207,32 +174,6 @@ namespace SpinMotion
             Revs = ULerp(revsRangeMin, revsRangeMax, m_GearFactor);
         }
 
-
-        /// <summary>
-        /// the player's entry point. shapes the steering and hands everything to Move. bots keep
-        /// calling Move directly: their steering is already a smooth, speed-aware output of their own
-        /// controller and scaling it again would make them run wide
-        /// </summary>
-        public void MoveArcade(float steering, float accel, float footbrake, float handbrake)
-        {
-            HasArcadeInput = true;
-            var target = Mathf.Clamp(steering, -1f, 1f);
-
-            // ramp: rising towards the pad takes steerRiseSeconds, letting go returns faster
-            var returning = Mathf.Abs(target) < Mathf.Abs(SteerInput) || Mathf.Sign(target) != Mathf.Sign(SteerInput);
-            var seconds = returning ? steerReturnSeconds : steerRiseSeconds;
-            var rate = seconds > 0.001f ? Time.fixedDeltaTime / seconds : 1f;
-            SteerInput = Mathf.MoveTowards(SteerInput, target, rate);
-
-            // the largest wheel angle whose kinematic turn stays inside the lateral budget:
-            // a_lat = v^2 * tan(angle) / wheelbase
-            var v = m_Rigidbody != null ? m_Rigidbody.linearVelocity.magnitude : 0f;
-            var allowed = Mathf.Atan(steerLateralBudget * wheelbase / Mathf.Max(1f, v * v));
-            var full = Mathf.Max(0.01f, m_MaximumSteerAngle * Mathf.Deg2Rad);
-            var scale = Mathf.Clamp(allowed / full, minSteerFraction, 1f);
-
-            Move(SteerInput * scale, accel, footbrake, handbrake);
-        }
 
         public void Move(float steering, float accel, float footbrake, float handbrake)
         {

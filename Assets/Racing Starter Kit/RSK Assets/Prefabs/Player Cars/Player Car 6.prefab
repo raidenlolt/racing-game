@@ -5573,9 +5573,9 @@ MonoBehaviour:
   - {fileID: 1083510251939966018}
   - {fileID: 6693264373006836637}
   - {fileID: 2152160667431651952}
-  m_CentreOfMassOffset: {x: 0, y: -0.35, z: 0}
+  m_CentreOfMassOffset: {x: 0, y: 0, z: 0}
   m_MaximumSteerAngle: 24
-  m_SteerHelper: 0.85
+  m_SteerHelper: 1
   m_TractionControl: 1
   m_FullTorqueOverAllWheels: 3750
   m_ReverseTorque: 1000
@@ -5586,10 +5586,6 @@ MonoBehaviour:
   m_RevRangeBoundary: 1
   m_SlipLimit: 0.4
   m_BrakeTorque: 20000
-  steerRiseSeconds: 0.22
-  steerReturnSeconds: 0.12
-  steerLateralBudget: 55
-  minSteerFraction: 0.06
   m_WaitTimeBeforeFlip: 2.5
   forceSteering: 0
   forceSteeringFactor: 0.1
@@ -5705,17 +5701,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4ba5af4894ce1d4a8adc71263ce67be, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.ArcadeAssists
-  lateralGrip: 7
-  gripReleaseSlip: 0.45
+  lateralGrip: 5
+  gripReleaseSlip: 0.35
   driftAssistTorque: 9000
-  driftSlipThreshold: 0.5
-  maxYawRate: 110
-  spinDamping: 9
-  yawRateLowSpeed: 110
-  lateralAccelBudget: 30
-  yawAssistGain: 0.025
-  yawAssistMax: 2.5
-  yawAssistMinSpeed: 2
+  driftSlipThreshold: 0.35
+  maxYawRate: 160
+  spinDamping: 6
   airPitchTorque: 2600
   airYawTorque: 4200
   airRollTorque: 3400
@@ -5818,15 +5809,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.WallSlide
   retainedSpeed: 0.82
-  minimumHorizontalNormal: 0.4
-  maxAwaySpeed: 0.8
-  maxUpwardSpeed: 1
+  maxNormalUp: 0.5
+  pushOff: 1.2
   alignRate: 6
   minimumSpeed: 6
-  contactMemory: 1.5
-  releaseSteerAngle: 2
-  yawDamping: 0.6
-  trustedNormalAngle: 35
 --- !u!1 &8071540824469072272
 GameObject:
   m_ObjectHideFlags: 0
