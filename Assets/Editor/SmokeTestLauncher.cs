@@ -32,6 +32,15 @@ namespace SpinMotion.EditorTools
             EditorApplication.EnterPlaymode();
         }
 
+        /// <summary>lap-count check on the open track: a 1 lap race must end after 1 lap</summary>
+        [MenuItem("Tools/Racing/Run Lap Count Test In Editor")]
+        public static void RunLapTestHere()
+        {
+            if (File.Exists(LapCountTest.ReportPath)) File.Delete(LapCountTest.ReportPath);
+            File.WriteAllText(LapCountTest.FlagPath, "1");
+            EditorApplication.EnterPlaymode();
+        }
+
         public static void Run()
         {
             var args = Environment.GetCommandLineArgs();

@@ -16,6 +16,11 @@ using UnityEngine;
 /// existing grid: same column as the point two places earlier, one row further back. every point is
 /// then dropped onto whatever collider is beneath it, so a hand-dragged point that ended up inside
 /// the tarmac stops being a launch ramp.
+///
+/// no slot may sit on the start line. checkpoint 1 is the start line and its trigger is 1.4 m thick;
+/// a car whose slot is inside it never "enters" it at the flag, so its first crossing is never
+/// counted and a 1 lap race needs 2 laps (Race_Track_01's pole slot was 0.4 m past the line). any
+/// slot closer than MinLineClearance to the line is moved to a new row at the back of the grid.
 /// </summary>
 namespace SpinMotion.EditorTools
 {
@@ -36,6 +41,8 @@ namespace SpinMotion.EditorTools
         private const float ProbeHeight = 10f;
         /// <summary>two points closer than this hold overlapping cars</summary>
         private const float MinSpacing = 5f;
+        /// <summary>metres a slot must be short of the start line: a car length plus the trigger</summary>
+        private const float MinLineClearance = 6f;
 
         [MenuItem("Tools/Racing/Repair Spawn Grids")]
         public static void RunMenu()
@@ -138,6 +145,8 @@ namespace SpinMotion.EditorTools
                 Debug.LogError("[SpawnGrid] " + sceneName + ": only " + list.Count + " of " + needed
                                + " spawn points and no spare points left in the Spawning prefab");
 
+            KeepBehindStartLine(list, sceneName);
+
             // everything onto the surface
             foreach (var point in list)
             {
@@ -173,6 +182,46 @@ namespace SpinMotion.EditorTools
         /// the point HeightAboveRoad over the first non-trigger collider below the position, or null
         /// when there is nothing under it at all
         /// </summary>
+        /// <summary>
+        /// moves any slot that is on or past the start line to a fresh row behind the last one, in
+        /// the same column it had. the line is checkpoint 1; travel direction is the grid's own facing
+        /// </summary>
+        private static void KeepBehindStartLine(List<Transform> list, string sceneName)
+        {
+            var checkpoints = Object.FindFirstObjectByType<Checkpoints>(FindObjectsInactive.Include);
+            var line = checkpoints != null ? checkpoints.GetComponentsInChildren<Checkpoint>(true).FirstOrDefault() : null;
+            var trigger = line != null ? line.GetComponent<Collider>() : null;
+            if (trigger == null || list.Count == 0)
+            {
+                Debug.LogWarning("[SpawnGrid] " + sceneName + ": no start line checkpoint found, line clearance not checked");
+                return;
+            }
+
+            var forward = Vector3.zero;
+            foreach (var p in list) forward += p.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.01f) return;
+            forward.Normalize();
+            var lineCentre = trigger.bounds.center;
+            var right = Vector3.Cross(Vector3.up, forward);
+
+            foreach (var point in list)
+            {
+                var along = Vector3.Dot(point.position - lineCentre, forward);
+                if (along < -MinLineClearance) continue;
+
+                // the row behind the rearmost of the other slots, keeping this slot's column
+                var others = list.Where(p => p != point).ToList();
+                var rearmost = others.Min(p => Vector3.Dot(p.position - lineCentre, forward));
+                var lateral = Vector3.Dot(point.position - lineCentre, right);
+                var target = lineCentre + forward * (rearmost - RowSpacing) + right * lateral;
+                target.y = point.position.y;
+                Debug.LogWarning("[SpawnGrid] " + sceneName + ": " + point.name + " was " + along.ToString("F1")
+                                 + " m from the start line, moved to the back row at " + target.ToString("F1"));
+                point.position = target;
+            }
+        }
+
         private static Vector3? SnapToGround(Vector3 at, out string hitName)
         {
             hitName = null;

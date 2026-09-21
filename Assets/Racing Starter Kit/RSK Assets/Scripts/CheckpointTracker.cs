@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 /// <summary>
 /// this script takes the count of the checkpoints and laps passed of each player in the race
 /// the information is stored in RealTimeRacePositions script that calculates the race position scoring
@@ -35,6 +35,22 @@ namespace SpinMotion
         }
 
         private void OnTriggerEnter(Collider other)
+        {
+            Cross(other);
+        }
+
+        /// <summary>
+        /// a car that is already inside a checkpoint when the race starts never gets an Enter for it,
+        /// which used to cost a whole lap when a grid slot sat on the start line. Stay catches that
+        /// case; once the checkpoint has been accepted the number no longer matches, so nothing is
+        /// counted twice
+        /// </summary>
+        private void OnTriggerStay(Collider other)
+        {
+            Cross(other);
+        }
+
+        private void Cross(Collider other)
         {
             if (!raceManager.Item.IsRaceInProgress()) return;
 

@@ -845,7 +845,7 @@ PlayerSettings:
   scriptingDefineSymbols:
     Android: MOBILE_INPUT;USE_MOBILE_INPUT;SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY
     Standalone: SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY
-    WebGL: MOBILE_INPUT;USE_MOBILE_INPUT
+    WebGL: MOBILE_INPUT;USE_MOBILE_INPUT;SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
