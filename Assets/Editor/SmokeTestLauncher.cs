@@ -41,6 +41,26 @@ namespace SpinMotion.EditorTools
             EditorApplication.EnterPlaymode();
         }
 
+        /// <summary>
+        /// batch entry for the lap count test:
+        ///   -executeMethod SpinMotion.EditorTools.SmokeTestLauncher.RunLapTest -scene <path> [-laps N]
+        /// </summary>
+        public static void RunLapTest()
+        {
+            var args = Environment.GetCommandLineArgs();
+            var index = Array.IndexOf(args, "-scene");
+            var scene = index >= 0 && index + 1 < args.Length ? args[index + 1]
+                                                                : "Assets/Racing_Track_Pack/Scenes/Race_Track_01.unity";
+            var lapsIndex = Array.IndexOf(args, "-laps");
+            var laps = lapsIndex >= 0 && lapsIndex + 1 < args.Length ? args[lapsIndex + 1] : "1";
+
+            if (File.Exists(LapCountTest.ReportPath)) File.Delete(LapCountTest.ReportPath);
+            EditorSceneManager.OpenScene(scene, OpenSceneMode.Single);
+            File.WriteAllText(LapCountTest.FlagPath, laps);
+            Debug.Log("[LapTest] entering play mode on " + scene + " with " + laps + " lap(s)");
+            EditorApplication.EnterPlaymode();
+        }
+
         public static void Run()
         {
             var args = Environment.GetCommandLineArgs();
@@ -63,7 +83,7 @@ namespace SpinMotion.EditorTools
         [InitializeOnLoadMethod]
         private static void ArmTimeout()
         {
-            if (!Application.isBatchMode || !File.Exists(FlagPath)) return;
+            if (!Application.isBatchMode || !(File.Exists(FlagPath) || File.Exists(LapCountTest.FlagPath))) return;
             var deadline = EditorApplication.timeSinceStartup + 240.0;
             EditorApplication.update += () =>
             {

@@ -6,6 +6,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace SpinMotion
 {
@@ -136,6 +137,68 @@ namespace SpinMotion
             var gasIcon = gasPad != null ? gasPad.GetComponentsInChildren<Image>(true).FirstOrDefault(i => i.sprite != null && !i.sprite.name.StartsWith("UI")) : null;
             Check(gasIcon != null, "gas pad shows a sprite" + (gasIcon != null ? " (" + gasIcon.sprite.name + ")" : gasPad == null ? " (no Throttle Button object)" : ""));
             var playerCar = FindFirstObjectByType<CarUserControl>();
+            // ---- multitouch pads: two fingers, four combinations, and the releases that used to cancel
+            {
+                var pads = FindObjectsByType<TouchPad>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                TouchPad Find(string axis, bool positive) => pads.FirstOrDefault(p => p.axisName == axis && p.positive == positive);
+                var left = Find("Horizontal", false); var right = Find("Horizontal", true);
+                var gas = Find("Vertical", true); var brake = Find("Vertical", false);
+                Check(left != null && right != null && gas != null && brake != null, "four touch pads present (" + pads.Length + ")");
+                if (left != null && right != null && gas != null && brake != null)
+                {
+                    // pads only publish while enabled; the rig may be off in the editor
+                    var offChain = new List<GameObject>();
+                    foreach (var p in pads) for (var t = p.transform; t != null; t = t.parent) if (!t.gameObject.activeSelf && !offChain.Contains(t.gameObject)) offChain.Add(t.gameObject);
+                    foreach (var go in offChain) go.SetActive(true);
+                    MobileInputManager.SwitchActiveInputMethod(MobileInputManager.ActiveInputMethod.Touch);
+                    yield return null;
+
+                    var es = EventSystem.current;
+                    PointerEventData Finger(int id) => new PointerEventData(es) { pointerId = id };
+                    void Down(TouchPad p, int id) => ExecuteEvents.Execute(p.gameObject, Finger(id), ExecuteEvents.pointerDownHandler);
+                    void Up(TouchPad p, int id) => ExecuteEvents.Execute(p.gameObject, Finger(id), ExecuteEvents.pointerUpHandler);
+                    void Exit(TouchPad p, int id) => ExecuteEvents.Execute(p.gameObject, Finger(id), ExecuteEvents.pointerExitHandler);
+                    float H() => MobileInputManager.GetAxisRaw("Horizontal");
+                    float V() => MobileInputManager.GetAxisRaw("Vertical");
+                    void ReleaseEverything() { foreach (var p in pads) p.ReleaseAll(); }
+
+                    ReleaseEverything();
+                    var combos = new[] { (left, -1f, gas, 1f, "left + gas"), (right, 1f, gas, 1f, "right + gas"), (left, -1f, brake, -1f, "left + brake"), (right, 1f, brake, -1f, "right + brake") };
+                    foreach (var combo in combos)
+                    {
+                        Down(combo.Item1, 1); Down(combo.Item3, 2);
+                        var held = H() == combo.Item2 && V() == combo.Item4;
+                        Up(combo.Item3, 2);
+                        var steerKept = H() == combo.Item2 && V() == 0f;
+                        Down(combo.Item3, 2); Up(combo.Item1, 1);
+                        var pedalKept = H() == 0f && V() == combo.Item4;
+                        Up(combo.Item3, 2);
+                        Check(held && steerKept && pedalKept, combo.Item5 + ": both read, releasing either leaves the other (" + (held ? "held" : "NOT held") + ", steer " + (steerKept ? "kept" : "lost") + ", pedal " + (pedalKept ? "kept" : "lost") + ")");
+                    }
+                    Down(gas, 1); Exit(gas, 1);
+                    Check(V() == 1f, "a thumb drifting off the gas pad keeps the gas down");
+                    Down(gas, 2); Up(gas, 2);
+                    Check(V() == 1f, "a second finger tapping the gas pad does not lift the first");
+                    Up(gas, 1);
+                    Check(V() == 0f, "gas released when the last finger lifts");
+                    Down(gas, 1); Down(brake, 2);
+                    Check(V() == -1f, "brake wins while both pedals are down");
+                    Up(brake, 2);
+                    Check(V() == 1f, "gas resumes when the brake lifts");
+                    Up(gas, 1);
+                    Down(left, 1); Down(right, 2);
+                    Check(H() == 0f, "left and right together cancel to straight");
+                    Up(left, 1);
+                    Check(H() == 1f, "right stays after left lifts");
+                    Up(right, 2);
+                    ReleaseEverything();
+                    foreach (var go in offChain) go.SetActive(false);
+#if !MOBILE_INPUT
+                    MobileInputManager.SwitchActiveInputMethod(MobileInputManager.ActiveInputMethod.Hardware);
+#endif
+                }
+            }
+
             Check(playerCar != null && playerCar.GetComponent<WallSlide>() != null, "player car has WallSlide");
             Check(playerCar != null && playerCar.GetComponent<Rigidbody>().collisionDetectionMode == CollisionDetectionMode.ContinuousDynamic, "player car uses continuous dynamic collision");
             var walls = FindObjectsByType<Collider>(FindObjectsSortMode.None).Where(b => b.name.StartsWith("Wall") && !b.isTrigger).ToList();
@@ -311,9 +374,11 @@ namespace SpinMotion
                       && fallback.timerMinutes == 120 && fallback.highestScore == 0 && !fallback.CanSubmit,
                       "launch URL fallbacks and clamps: " + fallback);
                 Check(ThrylLaunch.Parse("index.html").playerName == "Guest", "launch with no parameters defaults to Guest");
-                Check(RaceScore.Compute(RaceFinishType.Win, 1, 7, 1f) == 1000 && RaceScore.Compute(RaceFinishType.Lose, 3, 7, 1f) == 650
-                      && RaceScore.Compute(RaceFinishType.Timeout, 5, 7, 0.5f) == 70 && RaceScore.Compute(RaceFinishType.Lose, 7, 7, 1f) > RaceScore.Compute(RaceFinishType.Timeout, 1, 7, 1f),
-                      "race score rules: 1st 1000, 3rd 650, timeout half way 70, last finisher beats any timeout");
+                // the client's formula: round(1,000,000 x laps / seconds) + laps x 1,000; nothing for a timeout
+                Check(RaceScore.Compute(RaceFinishType.Win, 2, 100f) == 22000 && RaceScore.Compute(RaceFinishType.Lose, 1, 60f) == 17667
+                      && RaceScore.Compute(RaceFinishType.Timeout, 2, 100f) == 0 && RaceScore.Compute(RaceFinishType.Win, 0, 100f) == 0
+                      && RaceScore.Compute(RaceFinishType.Win, 2, 90f) > RaceScore.Compute(RaceFinishType.Win, 2, 100f),
+                      "race score rules: 2 laps in 100 s = 22,000, 1 lap in 60 s = 17,667, timeout 0, faster scores more");
 
                 var client = ThrylClient.Instance;
                 Check(client != null && client.Config != null, "THRYL client booted from Resources");
@@ -358,13 +423,37 @@ namespace SpinMotion
                 var bBody = bot.GetComponent<Rigidbody>();
                 var ai = bot.GetComponent<CarAIControl>();
                 ai.enabled = false;
+
+                // the wall brushes leave the player wherever the rail let go of it, sometimes with a
+                // bend right behind; stage the hit on the racing line so the bot is never dropped
+                // into a barrier
+                var respawn = player.GetComponent<CarRespawn>();
+                Vector3 onLine, tangent;
+                if (respawn != null && respawn.TryGetRacingLine(pBody.position, out onLine, out tangent))
+                {
+                    tangent.y = 0f;
+                    if (tangent.sqrMagnitude > 0.01f)
+                    {
+                        tangent.Normalize();
+                        var slide = player.GetComponent<WallSlide>();
+                        if (slide != null) slide.Release();
+                        pBody.position = onLine + Vector3.up * 0.3f;
+                        pBody.rotation = Quaternion.LookRotation(tangent, Vector3.up);
+                        pBody.linearVelocity = tangent * 10f;
+                        pBody.angularVelocity = Vector3.zero;
+                        yield return new WaitForFixedUpdate();
+                    }
+                }
+
                 bBody.position = pBody.position - player.transform.forward * 7f + Vector3.up * 0.2f;
                 bBody.rotation = player.transform.rotation;
                 bBody.linearVelocity = pBody.linearVelocity + player.transform.forward * 14f;
+                var staged = "player " + pBody.position.ToString("F1") + " at " + pBody.linearVelocity.magnitude.ToString("F1") + " m/s, bot " + bBody.position.ToString("F1") + " at " + bBody.linearVelocity.magnitude.ToString("F1") + " m/s";
                 var before = playerHits;
                 var deadline = Time.realtimeSinceStartup + 2f;
                 while (Time.realtimeSinceStartup < deadline && playerHits == before) yield return null;
-                Check(playerHits > before, "player registered a rear-end hit (" + (playerHits - before) + ")");
+                var gap = Vector3.Distance(pBody.position, bBody.position);
+                Check(playerHits > before, "player registered a rear-end hit (" + (playerHits - before) + "; staged " + staged + "; gap after " + gap.ToString("F1") + " m, bot now " + bBody.linearVelocity.magnitude.ToString("F1") + " m/s)");
                 var flash = FindObjectsByType<Image>(FindObjectsSortMode.None).FirstOrDefault(i => i.name == "Hit Flash");
                 Check(flash != null && flash.color.a > 0.05f, "hit flash lit on the HUD (hit " + lastHitSpeed.ToString("F1") + " m/s, flash alpha " + (flash != null ? flash.color.a.ToString("F2") : "none") + ")");
                 Check(bot.GetComponent<CarImpactFX>() != null && bot.GetComponent<CarImpactFX>().HitCount > 0, "the bot registered the hit too");
@@ -400,7 +489,11 @@ namespace SpinMotion
             yield return new WaitForSecondsRealtime(1.2f);
             Check(panel != null && panel.activeInHierarchy, "results panel shown after the sequence");
             var thryl = ThrylClient.Instance;
-            Check(thryl != null && thryl.LastScore >= 150 && thryl.LastScore <= 1000, "THRYL client recorded a place-based score for the run (" + (thryl != null ? thryl.LastScore : -1) + ")");
+            var manager = FindFirstObjectByType<RaceManager>();
+            var racePositions = FindFirstObjectByType<RealTimeRacePositions>();
+            var expectedScore = RaceScore.Compute(RaceFinishType.Win, RaceScore.CompletedLaps(racePositions, 0), manager != null ? manager.RaceSeconds : 0f);
+            Check(manager != null && manager.RaceSeconds > 5f && manager.RaceSeconds < 600f, "race clock frozen at the finish (" + (manager != null ? manager.RaceSeconds.ToString("F1") : "-") + " s)");
+            Check(thryl != null && thryl.LastScore == expectedScore, "THRYL client recorded the run's speed-and-lap score (" + (thryl != null ? thryl.LastScore : -1) + ", expected " + expectedScore + " for " + RaceScore.CompletedLaps(racePositions, 0) + " completed laps)");
             var statusLabel = panel != null ? panel.GetComponentsInChildren<TMPro.TMP_Text>(true).FirstOrDefault(t => t.name == "Platform Status TMP") : null;
             Check(statusLabel != null && statusLabel.text.StartsWith("Best:"), "results panel shows the best score line (" + (statusLabel != null ? statusLabel.text : "missing") + ")");
             var shownScore = FindObjectsByType<RaceFinishGUI>(FindObjectsSortMode.None).FirstOrDefault()?.raceFinishTMP;

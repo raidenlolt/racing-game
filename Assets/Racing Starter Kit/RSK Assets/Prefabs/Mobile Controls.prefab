@@ -11,8 +11,7 @@ GameObject:
   - component: {fileID: 7342048859618676582}
   - component: {fileID: 3170118016504479520}
   - component: {fileID: 8747312541653584668}
-  - component: {fileID: 2911165559010860035}
-  - component: {fileID: 7023548552322384508}
+  - component: {fileID: 6280407534439348484}
   m_Layer: 0
   m_Name: Brake/Reverse Button
   m_TagString: Untagged
@@ -92,7 +91,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &2911165559010860035
+--- !u!114 &6280407534439348484
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -101,55 +100,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 473594410853107522}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Script: {fileID: 11500000, guid: 88483293566d453449aca2d3533098df, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  m_Delegates:
-  - eventID: 2
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 7023548552322384508}
-          m_TargetAssemblyTypeName: SpinMotion.MobileButtonHandler, Assembly-CSharp
-          m_MethodName: SetAxisNegativeState
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - eventID: 3
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 7023548552322384508}
-          m_TargetAssemblyTypeName: SpinMotion.MobileButtonHandler, Assembly-CSharp
-          m_MethodName: SetAxisNeutralState
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
---- !u!114 &7023548552322384508
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 473594410853107522}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 85bf3be603548374ca46f521a3aa7fda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Name: Vertical
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.TouchPad
+  axisName: Vertical
+  positive: 0
+  overridesOpposite: 1
 --- !u!1 &1088118839260500269
 GameObject:
   m_ObjectHideFlags: 0
@@ -297,8 +253,7 @@ GameObject:
   - component: {fileID: 8404530608999221416}
   - component: {fileID: 6240469771737101645}
   - component: {fileID: 4905263460672037250}
-  - component: {fileID: 8661664784285787772}
-  - component: {fileID: 2421764035148933812}
+  - component: {fileID: 7824769280846065330}
   m_Layer: 0
   m_Name: Throttle Button
   m_TagString: Untagged
@@ -378,7 +333,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &8661664784285787772
+--- !u!114 &7824769280846065330
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -387,55 +342,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 2812385410745003346}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Script: {fileID: 11500000, guid: 88483293566d453449aca2d3533098df, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  m_Delegates:
-  - eventID: 2
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 2421764035148933812}
-          m_TargetAssemblyTypeName: SpinMotion.MobileButtonHandler, Assembly-CSharp
-          m_MethodName: SetAxisPositiveState
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - eventID: 3
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 2421764035148933812}
-          m_TargetAssemblyTypeName: SpinMotion.MobileButtonHandler, Assembly-CSharp
-          m_MethodName: SetAxisNeutralState
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
---- !u!114 &2421764035148933812
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2812385410745003346}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 85bf3be603548374ca46f521a3aa7fda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Name: Vertical
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.TouchPad
+  axisName: Vertical
+  positive: 1
+  overridesOpposite: 0
 --- !u!1 &4803046729304894499
 GameObject:
   m_ObjectHideFlags: 0
@@ -447,8 +359,7 @@ GameObject:
   - component: {fileID: 1013543715515368616}
   - component: {fileID: 6559574666448209361}
   - component: {fileID: 2842168664320381909}
-  - component: {fileID: 9187405573346141221}
-  - component: {fileID: 3371897659553238679}
+  - component: {fileID: 5674661244982517351}
   m_Layer: 0
   m_Name: Turn Right Button
   m_TagString: Untagged
@@ -528,7 +439,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &9187405573346141221
+--- !u!114 &5674661244982517351
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -537,55 +448,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 4803046729304894499}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Script: {fileID: 11500000, guid: 88483293566d453449aca2d3533098df, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  m_Delegates:
-  - eventID: 2
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 3371897659553238679}
-          m_TargetAssemblyTypeName: SpinMotion.MobileButtonHandler, Assembly-CSharp
-          m_MethodName: SetAxisPositiveState
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - eventID: 3
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 3371897659553238679}
-          m_TargetAssemblyTypeName: SpinMotion.MobileButtonHandler, Assembly-CSharp
-          m_MethodName: SetAxisNeutralState
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
---- !u!114 &3371897659553238679
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4803046729304894499}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 85bf3be603548374ca46f521a3aa7fda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Name: Horizontal
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.TouchPad
+  axisName: Horizontal
+  positive: 1
+  overridesOpposite: 0
 --- !u!1 &6180665198725557288
 GameObject:
   m_ObjectHideFlags: 0
@@ -822,8 +690,7 @@ GameObject:
   - component: {fileID: 8817413415538551539}
   - component: {fileID: 3745511014130973031}
   - component: {fileID: 3397685732967876718}
-  - component: {fileID: 1403352687841862660}
-  - component: {fileID: 5003922413225694147}
+  - component: {fileID: 2989631859000755979}
   m_Layer: 0
   m_Name: Turn Left Button
   m_TagString: Untagged
@@ -903,7 +770,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &1403352687841862660
+--- !u!114 &2989631859000755979
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -912,52 +779,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 8774563839295261013}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
+  m_Script: {fileID: 11500000, guid: 88483293566d453449aca2d3533098df, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  m_Delegates:
-  - eventID: 2
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 5003922413225694147}
-          m_TargetAssemblyTypeName: SpinMotion.MobileButtonHandler, Assembly-CSharp
-          m_MethodName: SetAxisNegativeState
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - eventID: 3
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 5003922413225694147}
-          m_TargetAssemblyTypeName: SpinMotion.MobileButtonHandler, Assembly-CSharp
-          m_MethodName: SetAxisNeutralState
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
---- !u!114 &5003922413225694147
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8774563839295261013}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 85bf3be603548374ca46f521a3aa7fda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Name: Horizontal
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.TouchPad
+  axisName: Horizontal
+  positive: 0
+  overridesOpposite: 0

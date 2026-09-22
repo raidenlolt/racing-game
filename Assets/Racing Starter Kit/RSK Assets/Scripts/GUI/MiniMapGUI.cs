@@ -32,7 +32,8 @@ namespace SpinMotion
 
         [Header("Markers")]
         public Color playerColor = new Color(1f, 0.62f, 0.2f);
-        public Color botColor = new Color(1f, 1f, 1f, 0.85f);
+        [Tooltip("Other cars. Cyan by client request, so they read against both the dark map and the white track line.")]
+        public Color botColor = new Color(0f, 1f, 1f, 1f);
         public Color finishColor = new Color(1f, 1f, 1f, 0.9f);
         public float playerSize = 18f;
         public float botSize = 9f;

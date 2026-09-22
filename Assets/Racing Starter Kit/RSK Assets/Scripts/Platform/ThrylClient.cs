@@ -143,12 +143,16 @@ namespace SpinMotion
 
             var positionsItem = FindFirstObjectByType<RealTimeRacePositions>();
             if (positionsItem == null) return;
-            var place = positionsItem.GetPlayerRacePosition(0);
-            var fieldSize = positionsItem.RacePositionTotalScores.Count;
-            var progress = RaceScore.ProgressFraction(positionsItem, 0);
-            var score = RaceScore.Compute(type, place, fieldSize, progress);
+            var score = RaceScore.ForPlayer(type, positionsItem);
 
             RecordScore(score);
+            // a race the clock ended is not a completed-race result; it is shown as 0 and, unless the
+            // config says otherwise, kept off the leaderboard
+            if (!RaceScore.IsCompleted(type) && !Config.submitUnfinished)
+            {
+                Report(false, "race not completed (" + type + "), no score submitted");
+                return;
+            }
             if (Config.submitOnFinish) SubmitScore(score);
         }
 

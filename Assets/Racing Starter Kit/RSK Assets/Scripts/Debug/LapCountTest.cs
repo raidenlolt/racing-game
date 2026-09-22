@@ -143,6 +143,16 @@ namespace SpinMotion
                   "race with " + lapsWanted + " lap(s) selected ended after " + lapsDriven.ToString("F1") + " lap(s), expected " + lapsWanted);
             Check(lapsCompletedEvents == lapsWanted + 1 || finishedAtCrossing != expectedCrossing,
                   "lap events: " + lapsCompletedEvents + " (start line plus one per lap)");
+
+            // the score for the run: speed points for the laps over the race clock, plus the lap bonus
+            yield return null;
+            var manager = FindFirstObjectByType<RaceManager>();
+            var client = ThrylClient.Instance;
+            var seconds = manager != null ? manager.RaceSeconds : 0f;
+            var expectedScore = RaceScore.Compute(finishType, lapsWanted, seconds);
+            Check(finishedAtCrossing > 0 && seconds > 1f, "race clock stopped at the finish (" + seconds.ToString("F1") + " s)");
+            Check(client != null && client.LastScore == expectedScore && expectedScore > RaceScore.LapBonus * lapsWanted,
+                  "score recorded for " + lapsWanted + " lap(s) in " + seconds.ToString("F1") + " s: " + (client != null ? client.LastScore : -1) + " (expected " + expectedScore + ")");
             Finish();
         }
 

@@ -36,8 +36,8 @@ namespace SpinMotion
         public float minimumSpeed = 6f;
         [Tooltip("Longest the slide keeps holding the car along the wall after the last touch. Released early the moment the player steers away from the wall.")]
         public float contactMemory = 1.5f;
-        [Tooltip("Steering angle (degrees) towards the open side that counts as steering away and releases the hold")]
-        public float releaseSteerAngle = 2f;
+        [Tooltip("Steering angle (degrees) towards the open side that counts as steering away and releases the hold. Small, so the first touch of the stick lets go of the rail.")]
+        public float releaseSteerAngle = 1f;
         [Tooltip("Share of yaw spin removed each physics step while sliding")]
         [Range(0f, 1f)] public float yawDamping = 0.6f;
 
@@ -141,7 +141,11 @@ namespace SpinMotion
             touchedThisStep = true;
             IsSliding = true;
 
-            HoldAlongWall(true);
+            // while the player is steering towards the open side the contact must not fight them:
+            // no cap on the speed away from the wall, no yaw damping, no nose alignment. only the
+            // along-wall top-up and the no-bounce clamp stay, so leaving the rail is immediate and
+            // still does not launch the car. QA saw the old behaviour as steering that stuck
+            HoldAlongWall(true, SteeringAway());
         }
 
         [Tooltip("Degrees a contact normal may differ from the road's cross direction and still be trusted as the wall's own face. Beyond this it is an end cap or a slope and the road direction is used instead.")]
@@ -201,7 +205,7 @@ namespace SpinMotion
         /// the shared correction: velocity along the wall, capped away from it and upward, nose
         /// turned along it and yaw spin damped. on a touch the along-wall speed is also topped up
         /// </summary>
-        private void HoldAlongWall(bool touching)
+        private void HoldAlongWall(bool touching, bool steeringAway = false)
         {
             var velocity = body.linearVelocity;
             var away = Vector3.Dot(velocity, wallNormal);
@@ -214,10 +218,14 @@ namespace SpinMotion
                 var glancing = Mathf.Clamp01(Vector3.Dot(travelBeforeContact, wallDirection));
                 along = Mathf.Max(along, speedBeforeContact * retainedSpeed * glancing);
             }
-            away = Mathf.Clamp(away, 0f, maxAwaySpeed);
+            // never into the wall; away from it only as far as the cap unless the player is steering
+            // away, in which case whatever the front wheels pull is theirs to keep
+            away = steeringAway ? Mathf.Max(away, 0f) : Mathf.Clamp(away, 0f, maxAwaySpeed);
             var up = Mathf.Min(velocity.y, maxUpwardSpeed);
 
             body.linearVelocity = wallDirection * along + wallNormal * away + Vector3.up * up;
+
+            if (steeringAway) return;
 
             // yaw: kill the spin the impact gave the car, then ease the nose along the wall
             var spin = body.angularVelocity;

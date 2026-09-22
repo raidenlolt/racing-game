@@ -16,6 +16,18 @@ namespace SpinMotion
         public bool IsRaceInProgress() { return isRaceInProgress; }
         private bool isRaceInProgress;
 
+        /// <summary>
+        /// race time in seconds: counting from the flag while the race runs, frozen at the finish.
+        /// the score is built from this, so it is game time (a pause stops it) and it stops the
+        /// moment RaceFinished is raised, before the finish sequence's slow motion
+        /// </summary>
+        public float RaceSeconds
+        {
+            get { return isRaceInProgress ? Time.time - raceStartTime : lastRaceSeconds; }
+        }
+        private float raceStartTime;
+        private float lastRaceSeconds;
+
         private void Awake()
         {
             raceManagerRuntimeItem.Set(this);
@@ -39,16 +51,20 @@ namespace SpinMotion
         private void OnRaceStarted()
         {
             isRaceInProgress = true;
+            raceStartTime = Time.time;
+            lastRaceSeconds = 0f;
         }
 
         private void OnRaceFinished(RaceFinishType raceFinishType)
         {
+            if (isRaceInProgress) lastRaceSeconds = Time.time - raceStartTime;
             isRaceInProgress = false;
         }
 
         private void OnRestartRace()
         {
             isRaceInProgress = false;
+            lastRaceSeconds = 0f;
             
             gameEvents.RestartRaceEvent.Invoke();
             gameEvents.PreRaceUpdateGuiEvent.Invoke();

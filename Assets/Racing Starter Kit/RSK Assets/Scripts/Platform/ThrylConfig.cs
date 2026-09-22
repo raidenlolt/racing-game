@@ -25,6 +25,8 @@ namespace SpinMotion
         [Header("Behaviour")]
         [Tooltip("Post the score when a race finishes. Off leaves everything else working with no network traffic.")]
         public bool submitOnFinish = true;
+        [Tooltip("Also post the (zero) score of a race the timer ended. Off: only completed races reach the leaderboard.")]
+        public bool submitUnfinished = false;
         [Tooltip("Seconds before a score request is abandoned")]
         public int requestTimeoutSeconds = 15;
         [Tooltip("Retries after a network failure (not after a 4xx, which will not change)")]
