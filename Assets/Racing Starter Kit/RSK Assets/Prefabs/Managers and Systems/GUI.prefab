@@ -452,7 +452,7 @@ MonoBehaviour:
   positionAt: 1.2
   resultsAt: 3.4
   skippableAfter: 0.9
-  fanfareClip: {fileID: 0}
+  fanfareClip: {fileID: 8300000, guid: 9272a79dac96a7f4ca407217fae6d3e8, type: 3}
   fanfareVolume: 0.8
 --- !u!114 &1595536061564490579
 MonoBehaviour:

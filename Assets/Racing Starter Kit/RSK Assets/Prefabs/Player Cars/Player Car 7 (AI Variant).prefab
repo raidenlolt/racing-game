@@ -119,11 +119,21 @@ PrefabInstance:
       propertyPath: m_Topspeed
       value: 160
       objectReference: {fileID: 0}
+    - target: {fileID: 3835630866047435186, guid: c7a75dc843e013e4da69ec4c1ace88d0,
+        type: 3}
+      propertyPath: igniteClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 7933a0c0d466f1f45b01deb2f80dc15a, type: 3}
     - target: {fileID: 4228361962956207416, guid: c7a75dc843e013e4da69ec4c1ace88d0,
         type: 3}
       propertyPath: isPlayer
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4787238982881379862, guid: c7a75dc843e013e4da69ec4c1ace88d0,
+        type: 3}
+      propertyPath: passbyClip
+      value: 
+      objectReference: {fileID: 8300000, guid: ccc57ac60f1847c41ae96367258f6698, type: 3}
     - target: {fileID: 5753671857880200119, guid: c7a75dc843e013e4da69ec4c1ace88d0,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -209,6 +219,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 842629984809019389}
+    - targetCorrespondingSourceObject: {fileID: 6627166573620393389, guid: c7a75dc843e013e4da69ec4c1ace88d0,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7357546751009895934}
   m_SourcePrefab: {fileID: 100100000, guid: c7a75dc843e013e4da69ec4c1ace88d0, type: 3}
 --- !u!4 &2830311404622053070 stripped
 Transform:
@@ -251,6 +265,12 @@ MonoBehaviour:
   m_StopWhenTargetReached: 0
   m_ReachTargetThreshold: 2
   gameEvents: {fileID: 0}
+  lookAheadSeconds: 1.6
+  minLookAhead: 12
+  maxLookAhead: 90
+  probeRadius: 1.4
+  followMargin: 4
+  passOffset: 4.5
 --- !u!114 &5891695158862796994
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -315,6 +335,26 @@ MonoBehaviour:
   secondsBeforeRespawn: 7
   nudgeDuration: 1.2
   probeDistance: 25
+--- !u!114 &7357546751009895934
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3703651913718036692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3c5e9360c898db4bbdfed7b6b420840, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.AccelerationSfx
+  clip: {fileID: 8300000, guid: 5f5d2819d60ea1742be5d301cdde5334, type: 3}
+  volume: 0.8
+  triggerThrottle: 0.6
+  maxSpeedMph: 30
+  cooldown: 5
+  liftThrottle: 0.2
+  liftFade: 0.25
+  playerOnly: 1
 --- !u!114 &8194278622394533877 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1813125279892163212, guid: c7a75dc843e013e4da69ec4c1ace88d0,

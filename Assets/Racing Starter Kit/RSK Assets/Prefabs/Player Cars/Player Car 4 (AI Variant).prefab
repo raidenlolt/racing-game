@@ -184,6 +184,16 @@ PrefabInstance:
       propertyPath: isPlayer
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6549784448457210430, guid: e1a34ffc56a13394da9e4a76497bdead,
+        type: 3}
+      propertyPath: igniteClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 7933a0c0d466f1f45b01deb2f80dc15a, type: 3}
+    - target: {fileID: 7345720917679976139, guid: e1a34ffc56a13394da9e4a76497bdead,
+        type: 3}
+      propertyPath: passbyClip
+      value: 
+      objectReference: {fileID: 8300000, guid: ccc57ac60f1847c41ae96367258f6698, type: 3}
     - target: {fileID: 7345720917679976139, guid: e1a34ffc56a13394da9e4a76497bdead,
         type: 3}
       propertyPath: engineSoundStyle
@@ -214,6 +224,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 5811885403174421524}
+    - targetCorrespondingSourceObject: {fileID: 4956954954255778322, guid: e1a34ffc56a13394da9e4a76497bdead,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3110024033535728621}
   m_SourcePrefab: {fileID: 100100000, guid: e1a34ffc56a13394da9e4a76497bdead, type: 3}
 --- !u!114 &4539428269621067387 stripped
 MonoBehaviour:
@@ -262,6 +276,12 @@ MonoBehaviour:
   m_StopWhenTargetReached: 0
   m_ReachTargetThreshold: 2
   gameEvents: {fileID: 0}
+  lookAheadSeconds: 1.6
+  minLookAhead: 12
+  maxLookAhead: 90
+  probeRadius: 1.4
+  followMargin: 4
+  passOffset: 4.5
 --- !u!114 &1128722935270631299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -326,6 +346,26 @@ MonoBehaviour:
   secondsBeforeRespawn: 7
   nudgeDuration: 1.2
   probeDistance: 25
+--- !u!114 &3110024033535728621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4549643790205028832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3c5e9360c898db4bbdfed7b6b420840, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.AccelerationSfx
+  clip: {fileID: 8300000, guid: 5f5d2819d60ea1742be5d301cdde5334, type: 3}
+  volume: 0.8
+  triggerThrottle: 0.6
+  maxSpeedMph: 30
+  cooldown: 5
+  liftThrottle: 0.2
+  liftFade: 0.25
+  playerOnly: 1
 --- !u!54 &7683713903171872166 stripped
 Rigidbody:
   m_CorrespondingSourceObject: {fileID: 1246153206815714900, guid: e1a34ffc56a13394da9e4a76497bdead,

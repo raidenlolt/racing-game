@@ -166,6 +166,7 @@ namespace SpinMotion
             car.transform.SetPositionAndRotation(a0, Quaternion.LookRotation(a1 - a0, Vector3.up));
             // the engine is already running out where it starts, so it is heard approaching
             PlayIdle(incoming);
+            PlayPassby(incoming);
 
             var arrivingAt = a0;
             var leavingAt = d0;
@@ -398,6 +399,26 @@ namespace SpinMotion
             }
 
             idles[index] = MakeIdleSource(car, idleClip);
+        }
+
+        [Header("Arrival")]
+        [Tooltip("Volume of the car's passby clip (CarAudio.passbyClip) as it sweeps onto the stage")]
+        [Range(0f, 1f)] public float passbyVolume = 0.8f;
+        private AudioSource passbySource;
+
+        /// <summary>the whoosh of the car sweeping in, a flat one-shot over the top of the 3D idle</summary>
+        private void PlayPassby(int index)
+        {
+            if (cars == null || index < 0 || index >= cars.Length || cars[index] == null) return;
+            var audio = cars[index].GetComponentInChildren<CarAudio>(true);
+            if (audio == null || audio.passbyClip == null) return;
+            if (passbySource == null)
+            {
+                passbySource = gameObject.AddComponent<AudioSource>();
+                passbySource.playOnAwake = false;
+                passbySource.spatialBlend = 0f;
+            }
+            passbySource.PlayOneShot(audio.passbyClip, passbyVolume);
         }
 
         /// <summary>

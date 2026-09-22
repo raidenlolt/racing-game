@@ -5487,6 +5487,7 @@ GameObject:
   - component: {fileID: 1569620626572881258}
   - component: {fileID: 2466200199476676928}
   - component: {fileID: 2185646850210269832}
+  - component: {fileID: 8631422563923796108}
   m_Layer: 0
   m_Name: Player Car 6
   m_TagString: Untagged
@@ -5625,6 +5626,7 @@ MonoBehaviour:
   lowDecelClip: {fileID: 8300000, guid: 5699dddcce16c4543b95951c4ce0e092, type: 3}
   highAccelClip: {fileID: 8300000, guid: 03e3bd08a6e70684dbe299a3e185fdd2, type: 3}
   highDecelClip: {fileID: 8300000, guid: 03bf91d88fce91c41995d27de63cc967, type: 3}
+  passbyClip: {fileID: 8300000, guid: ccc57ac60f1847c41ae96367258f6698, type: 3}
   pitchMultiplier: 0.8
   lowPitchMin: 1
   lowPitchMax: 5
@@ -5791,7 +5793,7 @@ MonoBehaviour:
   levelOneColor: {r: 0.45, g: 0.75, b: 1, a: 1}
   levelTwoColor: {r: 1, g: 0.62, b: 0.2, a: 1}
   levelThreeColor: {r: 1, g: 0.35, b: 0.12, a: 1}
-  igniteClip: {fileID: 0}
+  igniteClip: {fileID: 8300000, guid: 7933a0c0d466f1f45b01deb2f80dc15a, type: 3}
   loopClip: {fileID: 0}
   volume: 0.7
   basePitch: 0.95
@@ -5809,10 +5811,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.WallSlide
   retainedSpeed: 0.82
-  maxNormalUp: 0.5
-  pushOff: 1.2
+  minimumHorizontalNormal: 0.4
+  maxAwaySpeed: 0.8
+  maxUpwardSpeed: 1
   alignRate: 6
   minimumSpeed: 6
+  contactMemory: 1.5
+  releaseSteerAngle: 1
+  yawDamping: 0.6
+  trustedNormalAngle: 35
+--- !u!114 &8631422563923796108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7096302174626775585}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3c5e9360c898db4bbdfed7b6b420840, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.AccelerationSfx
+  clip: {fileID: 8300000, guid: 5f5d2819d60ea1742be5d301cdde5334, type: 3}
+  volume: 0.8
+  triggerThrottle: 0.6
+  maxSpeedMph: 30
+  cooldown: 5
+  liftThrottle: 0.2
+  liftFade: 0.25
+  playerOnly: 1
 --- !u!1 &8071540824469072272
 GameObject:
   m_ObjectHideFlags: 0

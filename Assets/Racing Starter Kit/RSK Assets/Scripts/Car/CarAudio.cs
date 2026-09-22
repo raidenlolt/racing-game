@@ -19,6 +19,8 @@ namespace SpinMotion
         public AudioClip lowDecelClip;
         public AudioClip highAccelClip;
         public AudioClip highDecelClip;
+        [Tooltip("Not played by the engine: the car sweeping past, heard when it drives onto the menu stage. Lives here so every sound a car makes travels with its prefab.")]
+        public AudioClip passbyClip;
         public float pitchMultiplier = 1f;
         public float lowPitchMin = 1f;
         public float lowPitchMax = 6f;
