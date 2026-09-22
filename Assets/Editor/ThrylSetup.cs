@@ -25,14 +25,14 @@ namespace SpinMotion.EditorTools
             var events = AssetDatabase.LoadAssetAtPath<GameEvents>(EventsPath);
             if (events == null) { Debug.LogError("[THRYL] GameEvents asset not found"); return; }
 
-            EnsureConfig();
+            EnsureConfig(events);
             WireGui(events);
 
             AssetDatabase.SaveAssets();
             Debug.Log("[THRYL] done");
         }
 
-        private static void EnsureConfig()
+        private static void EnsureConfig(GameEvents events)
         {
             VfxMaterials.EnsureFolder("Assets/Resources");
             var config = AssetDatabase.LoadAssetAtPath<ThrylConfig>(ConfigPath);
@@ -45,6 +45,13 @@ namespace SpinMotion.EditorTools
             else
             {
                 Debug.Log("[THRYL] config present, environment " + config.environment);
+            }
+            // the client boots on the track menu scene, which has nothing to take the events from
+            if (config.gameEvents != events)
+            {
+                config.gameEvents = events;
+                EditorUtility.SetDirty(config);
+                Debug.Log("[THRYL] config now references GameEvents");
             }
         }
 

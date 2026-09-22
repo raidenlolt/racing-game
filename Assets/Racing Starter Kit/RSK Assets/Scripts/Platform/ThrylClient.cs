@@ -74,18 +74,44 @@ namespace SpinMotion
                 Debug.Log("[THRYL] launch: " + Launch + (Launch.CanSubmit ? "" : " (no session: scores will not be submitted)")
                           + " env " + config.environment);
 
-            events = FindEvents();
-            if (events != null)
+            // the config carries the event asset because the first scene is the track menu, which
+            // has none of the race objects FindEvents could take it from; a client that booted there
+            // and searched would never hear a race finish. the search is only a fallback, retried on
+            // every scene load until something is found
+            if (config.gameEvents != null) Listen(config.gameEvents);
+            else
             {
-                events.RaceFinishedEvent.AddListener(OnRaceFinished);
-                events.RestartRaceEvent.AddListener(OnRestartRace);
-                events.RaceStartedEvent.AddListener(OnRaceStarted);
+                Listen(FindEvents());
+                if (events == null)
+                {
+                    Debug.LogWarning("[THRYL] config has no GameEvents reference; searching each scene for one");
+                    UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+                }
             }
+        }
+
+        /// <summary>true once the client is subscribed to the race events; nothing is submitted before that</summary>
+        public bool Listening { get { return events != null; } }
+
+        private void Listen(GameEvents source)
+        {
+            if (source == null || events != null) return;
+            events = source;
+            events.RaceFinishedEvent.AddListener(OnRaceFinished);
+            events.RestartRaceEvent.AddListener(OnRestartRace);
+            events.RaceStartedEvent.AddListener(OnRaceStarted);
+        }
+
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            Listen(FindEvents());
+            if (events != null) UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
             if (events == null) return;
             events.RaceFinishedEvent.RemoveListener(OnRaceFinished);
             events.RestartRaceEvent.RemoveListener(OnRestartRace);
@@ -111,6 +137,7 @@ namespace SpinMotion
 
         private void OnRaceFinished(RaceFinishType type)
         {
+            Debug.Log("[THRYL] Race finished: " + type);
             if (submittedThisRace) return;
             submittedThisRace = true;
 
@@ -134,9 +161,10 @@ namespace SpinMotion
         /// <summary>posts a score. safe to call without a session; it reports and does nothing</summary>
         public void SubmitScore(int score)
         {
+            Debug.Log("[THRYL] SubmitScore: " + score);
             if (!Launch.CanSubmit)
             {
-                Report(false, Launch.HasToken ? "no game id in the launch URL" : "no platform session");
+                Report(false, "Score: " + score + (Launch.HasToken ? "no game id in the launch URL" : "no platform session"));
                 return;
             }
             StartCoroutine(Submit(score));

@@ -14,6 +14,9 @@ namespace SpinMotion
     {
         public const string ResourceName = "ThrylConfig";
 
+        [Tooltip("The shared event bus. The client boots on the first scene (the track menu), which has none of the race objects it could take the events from, so the reference lives here.")]
+        public GameEvents gameEvents;
+
         public ThrylEnvironment environment = ThrylEnvironment.Staging;
         public string stagingBaseUrl = "https://thryl-staging.zapto.org";
         public string productionBaseUrl = "https://thryl-prod.com";

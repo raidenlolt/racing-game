@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0df5de64b5c9f934bbd2c98851129096, type: 3}
   m_Name: ThrylConfig
   m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.ThrylConfig
+  gameEvents: {fileID: 11400000, guid: 53a3a1c43dafc4df88b337434e1a6d28, type: 2}
   environment: 0
   stagingBaseUrl: https://thryl-staging.zapto.org
   productionBaseUrl: https://thryl-prod.com

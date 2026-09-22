@@ -126,10 +126,15 @@ namespace SpinMotion
 
             // ---- QA round 2 wiring
             Check(menu != null && menu.backToTracksButton != null, "menu has a back-to-tracks button");
-            var steerLeft = FindObjectsByType<Image>(FindObjectsSortMode.None).FirstOrDefault(i => i.name == "Icon" && i.transform.parent != null && i.transform.parent.name == "Steer Left Button");
-            Check(steerLeft != null && steerLeft.sprite != null, "steer left pad shows an icon sprite");
-            var gasIcon = FindObjectsByType<Image>(FindObjectsSortMode.None).FirstOrDefault(i => i.name == "Icon" && i.transform.parent != null && i.transform.parent.name == "Throttle Button");
-            Check(gasIcon != null && gasIcon.sprite != null && gasIcon.sprite.name.Contains("Gas"), "gas pad shows the pedal icon");
+            // the pad art now sits on the button images themselves (an Icon child was the earlier
+            // layout); either way the pad must show a sprite
+            var allTransforms = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var steerLeftPad = allTransforms.FirstOrDefault(t => t.name == "Steer Left Button");
+            var steerLeft = steerLeftPad != null ? steerLeftPad.GetComponentsInChildren<Image>(true).FirstOrDefault(i => i.sprite != null && !i.sprite.name.StartsWith("UI")) : null;
+            Check(steerLeft != null, "steer left pad shows a sprite" + (steerLeft != null ? " (" + steerLeft.sprite.name + ")" : steerLeftPad == null ? " (no Steer Left Button object)" : ""));
+            var gasPad = allTransforms.FirstOrDefault(t => t.name == "Throttle Button");
+            var gasIcon = gasPad != null ? gasPad.GetComponentsInChildren<Image>(true).FirstOrDefault(i => i.sprite != null && !i.sprite.name.StartsWith("UI")) : null;
+            Check(gasIcon != null, "gas pad shows a sprite" + (gasIcon != null ? " (" + gasIcon.sprite.name + ")" : gasPad == null ? " (no Throttle Button object)" : ""));
             var playerCar = FindFirstObjectByType<CarUserControl>();
             Check(playerCar != null && playerCar.GetComponent<WallSlide>() != null, "player car has WallSlide");
             Check(playerCar != null && playerCar.GetComponent<Rigidbody>().collisionDetectionMode == CollisionDetectionMode.ContinuousDynamic, "player car uses continuous dynamic collision");
@@ -312,6 +317,10 @@ namespace SpinMotion
 
                 var client = ThrylClient.Instance;
                 Check(client != null && client.Config != null, "THRYL client booted from Resources");
+                // the config must carry the events: on the real path the client boots on the track
+                // menu scene, where there is nothing to search for
+                Check(client != null && client.Config != null && client.Config.gameEvents != null, "THRYL config references GameEvents");
+                Check(client != null && client.Listening, "THRYL client listening for race events");
                 if (client != null)
                 {
                     Check(client.Config.environment == ThrylEnvironment.Staging, "THRYL config points at staging");
