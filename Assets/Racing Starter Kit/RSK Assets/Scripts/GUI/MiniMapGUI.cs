@@ -35,8 +35,9 @@ namespace SpinMotion
         [Tooltip("Other cars. Cyan by client request, so they read against both the dark map and the white track line.")]
         public Color botColor = new Color(0f, 1f, 1f, 1f);
         public Color finishColor = new Color(1f, 1f, 1f, 0.9f);
-        public float playerSize = 18f;
-        public float botSize = 9f;
+        [Tooltip("Marker sizes in reference pixels (1600x900 canvas). The map is small on a phone, so these are generous.")]
+        public float playerSize = 22f;
+        public float botSize = 16f;
 
         public int MarkerCount { get { return markers.Count; } }
         public bool HasTrack { get { return track != null && track.PointCount > 2; } }
@@ -237,22 +238,44 @@ namespace SpinMotion
             }
         }
 
+        /// <summary>
+        /// a disc with a dark rim. the image colour tints the white centre (cyan for the pack) while
+        /// the rim stays dark whatever the tint, so the dot separates from the pale track line it
+        /// spends most of the race sitting on. the first version was a plain soft-edged disc and
+        /// vanished into the line on a phone
+        /// </summary>
         private static Sprite BuildDot(int size)
         {
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
             tex.wrapMode = TextureWrapMode.Clamp;
             var pixels = new Color32[size * size];
             var half = size * 0.5f;
+            const float rimStart = 0.66f;
             for (int y = 0; y < size; y++)
             for (int x = 0; x < size; x++)
             {
                 var d = Mathf.Sqrt((x + 0.5f - half) * (x + 0.5f - half) + (y + 0.5f - half) * (y + 0.5f - half)) / half;
-                var a = 1f - Mathf.SmoothStep(0.78f, 1f, d);
-                pixels[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255f));
+                var a = 1f - Edge(0.9f, 1f, d);
+                // centre white (tinted), rim dark; a short blend between them keeps the edge clean
+                var rim = Edge(rimStart, rimStart + 0.12f, d);
+                var shade = (byte)Mathf.RoundToInt(Mathf.Lerp(255f, 18f, rim));
+                pixels[y * size + x] = new Color32(shade, shade, shade, (byte)(a * 255f));
             }
             tex.SetPixels32(pixels);
             tex.Apply(false, true);
             return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        /// <summary>
+        /// the shader smoothstep: 0 below edge0, 1 above edge1, a smooth ramp between. this is NOT
+        /// Mathf.SmoothStep, which interpolates between two values by a 0..1 t and was what the
+        /// dot used to be drawn with: 1 - Mathf.SmoothStep(0.78, 1, d) peaks at 0.22, so the pack's
+        /// dots were drawn at 22 percent alpha and never showed against the track line
+        /// </summary>
+        private static float Edge(float edge0, float edge1, float x)
+        {
+            var t = Mathf.Clamp01((x - edge0) / (edge1 - edge0));
+            return t * t * (3f - 2f * t);
         }
 
         /// <summary>a chevron pointing up (+y), with a soft edge</summary>

@@ -123,6 +123,13 @@ namespace SpinMotion
                 var playerMarker = miniMap.mapArea.Find("Player Marker") as RectTransform;
                 var inside = playerMarker != null && miniMap.mapArea.rect.Contains(playerMarker.anchoredPosition);
                 Check(inside, "player marker inside the map area" + (playerMarker != null ? " at " + playerMarker.anchoredPosition.ToString("F0") : ""));
+                // the pack: cyan, big enough to see on a phone, drawn and inside the map
+                var botMarker = miniMap.mapArea.Find("Bot Marker 1") as RectTransform;
+                var botImage = botMarker != null ? botMarker.GetComponent<Image>() : null;
+                var botVisible = botMarker != null && botMarker.gameObject.activeInHierarchy && botImage != null && botImage.sprite != null
+                                 && botImage.color.a > 0.95f && botImage.color.b > 0.9f && botImage.color.r < 0.2f
+                                 && botMarker.sizeDelta.x >= 14f && miniMap.mapArea.rect.Contains(botMarker.anchoredPosition);
+                Check(botVisible, "bot markers are cyan dots of at least 14 px inside the map" + (botMarker != null ? " (" + botMarker.sizeDelta.x + " px, colour " + (botImage != null ? botImage.color.ToString() : "-") + ")" : " (none)"));
             }
 
             // ---- QA round 2 wiring
@@ -150,8 +157,12 @@ namespace SpinMotion
                     var offChain = new List<GameObject>();
                     foreach (var p in pads) for (var t = p.transform; t != null; t = t.parent) if (!t.gameObject.activeSelf && !offChain.Contains(t.gameObject)) offChain.Add(t.gameObject);
                     foreach (var go in offChain) go.SetActive(true);
+                    // on a desktop build target the rig re-hides itself every frame; hold it off
+                    var rigs = FindObjectsByType<MobileControlRig>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(r => r.enabled).ToList();
+                    foreach (var r in rigs) r.enabled = false;
                     MobileInputManager.SwitchActiveInputMethod(MobileInputManager.ActiveInputMethod.Touch);
                     yield return null;
+                    foreach (var go in offChain) go.SetActive(true);
 
                     var es = EventSystem.current;
                     PointerEventData Finger(int id) => new PointerEventData(es) { pointerId = id };
@@ -193,6 +204,7 @@ namespace SpinMotion
                     Up(right, 2);
                     ReleaseEverything();
                     foreach (var go in offChain) go.SetActive(false);
+                    foreach (var r in rigs) r.enabled = true;
 #if !MOBILE_INPUT
                     MobileInputManager.SwitchActiveInputMethod(MobileInputManager.ActiveInputMethod.Hardware);
 #endif
@@ -232,6 +244,47 @@ namespace SpinMotion
             var botsMoving = cars.Count(c => c != null && c.GetComponent<CarAIControl>() != null
                                              && c.GetComponent<Rigidbody>().linearVelocity.magnitude > 3f);
             Check(botsMoving >= 3, botsMoving + " bots moving a couple of seconds after GO");
+
+            // ---- minimap, as drawn: sample the frame at each marker. the earlier checks only prove
+            // the markers exist; this proves the pixels are there (skipped headless, no frame buffer)
+            if (!Application.isBatchMode && miniMap != null && miniMap.mapArea != null)
+            {
+                yield return new WaitForEndOfFrame();
+                var frame = ScreenCapture.CaptureScreenshotAsTexture();
+                try
+                {
+                    string Sample(RectTransform marker)
+                    {
+                        var screen = RectTransformUtility.WorldToScreenPoint(null, marker.position);
+                        var x = Mathf.Clamp(Mathf.RoundToInt(screen.x), 0, frame.width - 1);
+                        var y = Mathf.Clamp(Mathf.RoundToInt(screen.y), 0, frame.height - 1);
+                        var c = frame.GetPixel(x, y);
+                        return marker.name + "@" + x + "," + y + "=" + c.r.ToString("F2") + "/" + c.g.ToString("F2") + "/" + c.b.ToString("F2");
+                    }
+                    var cyanDots = 0; var samples = new List<string>();
+                    for (int i = 1; i < miniMap.MarkerCount; i++)
+                    {
+                        var marker = miniMap.mapArea.Find("Bot Marker " + i) as RectTransform;
+                        if (marker == null || !marker.gameObject.activeInHierarchy) continue;
+                        var screen = RectTransformUtility.WorldToScreenPoint(null, marker.position);
+                        // the pack sits bunched on the grid, so a dot's centre can lie under a
+                        // neighbour's dark rim; any bright cyan within a few pixels is the dot
+                        var cx = Mathf.RoundToInt(screen.x); var cy = Mathf.RoundToInt(screen.y);
+                        var found = false;
+                        for (int dy = -4; dy <= 4 && !found; dy++)
+                        for (int dx = -4; dx <= 4 && !found; dx++)
+                        {
+                            var c = frame.GetPixel(Mathf.Clamp(cx + dx, 0, frame.width - 1), Mathf.Clamp(cy + dy, 0, frame.height - 1));
+                            found = c.g > 0.6f && c.b > 0.6f && c.r < 0.45f;
+                        }
+                        if (found) cyanDots++;
+                        if (samples.Count < 3) samples.Add(Sample(marker));
+                    }
+                    var playerMarker = miniMap.mapArea.Find("Player Marker") as RectTransform;
+                    Check(cyanDots >= 3, cyanDots + " bot markers drawn cyan on screen (frame " + frame.width + "x" + frame.height + "; " + string.Join(" ", samples) + (playerMarker != null ? " " + Sample(playerMarker) : "") + ")");
+                }
+                finally { Destroy(frame); }
+            }
 
             // ---- nitro
             Check(player != null, "player car present");
@@ -441,13 +494,16 @@ namespace SpinMotion
                         pBody.rotation = Quaternion.LookRotation(tangent, Vector3.up);
                         pBody.linearVelocity = tangent * 10f;
                         pBody.angularVelocity = Vector3.zero;
-                        yield return new WaitForFixedUpdate();
+                        // let the car settle onto its wheels, or the bot meets it mid-drop and the
+                        // contact normal points up instead of along the road
+                        yield return new WaitForSeconds(0.4f);
                     }
                 }
 
-                bBody.position = pBody.position - player.transform.forward * 7f + Vector3.up * 0.2f;
+                bBody.position = pBody.position - player.transform.forward * 7f;
                 bBody.rotation = player.transform.rotation;
-                bBody.linearVelocity = pBody.linearVelocity + player.transform.forward * 14f;
+                bBody.linearVelocity = pBody.linearVelocity + player.transform.forward * 16f;
+                bBody.angularVelocity = Vector3.zero;
                 var staged = "player " + pBody.position.ToString("F1") + " at " + pBody.linearVelocity.magnitude.ToString("F1") + " m/s, bot " + bBody.position.ToString("F1") + " at " + bBody.linearVelocity.magnitude.ToString("F1") + " m/s";
                 var before = playerHits;
                 var deadline = Time.realtimeSinceStartup + 2f;

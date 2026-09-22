@@ -31,6 +31,12 @@ namespace SpinMotion
 #endif
 		}
 
+		/// <summary>true while the touch (virtual) input is the active one; the hardware input throws on any Set call</summary>
+		public static bool TouchActive
+		{
+			get { return activeInput == s_TouchInput; }
+		}
+
 		public static void SwitchActiveInputMethod(ActiveInputMethod activeInputMethod)
 		{
 			switch (activeInputMethod)

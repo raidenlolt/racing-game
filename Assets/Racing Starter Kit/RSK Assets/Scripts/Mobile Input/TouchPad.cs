@@ -92,6 +92,9 @@ namespace SpinMotion
 
         private static void Publish(string axis)
         {
+            // the hardware input (editor on a desktop target) throws on any Set; the pads are hidden
+            // there anyway, so there is nothing to publish
+            if (!MobileInputManager.TouchActive) return;
             MobileInputManager.SetAxis(axis, Value(axis));
         }
     }

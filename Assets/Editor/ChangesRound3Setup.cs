@@ -85,8 +85,11 @@ namespace SpinMotion.EditorTools
                 var map = root.GetComponentInChildren<MiniMapGUI>(true);
                 if (map == null) { Debug.LogWarning("[Round3] no MiniMapGUI in " + prefabPath); return; }
                 map.botColor = new Color(0f, 1f, 1f, 1f);
+                // the dots were 9 reference pixels on a 5 pixel line: invisible on a phone
+                map.botSize = 16f;
+                map.playerSize = 22f;
                 PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
-                Debug.Log("[Round3] minimap: other cars are cyan");
+                Debug.Log("[Round3] minimap: other cars are cyan, " + map.botSize + " px with a dark rim");
             }
             finally { PrefabUtility.UnloadPrefabContents(root); }
         }

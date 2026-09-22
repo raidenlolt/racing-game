@@ -2958,8 +2958,8 @@ MonoBehaviour:
   playerColor: {r: 1, g: 0.62, b: 0.2, a: 1}
   botColor: {r: 0, g: 1, b: 1, a: 1}
   finishColor: {r: 1, g: 1, b: 1, a: 0.9}
-  playerSize: 18
-  botSize: 9
+  playerSize: 22
+  botSize: 16
 --- !u!1 &3400942457399508770
 GameObject:
   m_ObjectHideFlags: 0

@@ -18,6 +18,7 @@ MonoBehaviour:
   productionBaseUrl: https://thryl-prod.com
   scorePath: /in-game-score/points
   submitOnFinish: 1
+  submitUnfinished: 0
   requestTimeoutSeconds: 15
   retries: 2
   sendGameIdAsNumber: 1
