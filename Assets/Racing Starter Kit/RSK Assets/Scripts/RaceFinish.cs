@@ -69,6 +69,7 @@ namespace SpinMotion
 
         private void OnRaceTimeout()
         {
+            if (raceFinished) return;
             raceFinished = true;
             gameEvents.RaceFinishedEvent.Invoke(RaceFinishType.Timeout);
         }
