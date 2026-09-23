@@ -294,28 +294,6 @@ namespace SpinMotion
                 Check(carAudio != null && carAudio.engineSoundStyle == CarAudio.EngineAudioOptions.FourChannel && engineClipName == "AccelerationHigh",
                       "engine keeps the kit's four-channel loops (" + engineClipName + ", " + (carAudio != null ? carAudio.engineSoundStyle.ToString() : "-") + ")");
                 Check(carAudio != null && carAudio.passbyClip != null && carAudio.passbyClip.name == "Car passby", "car carries the passby clip for the menu stage");
-                // the acceleration flourish: present with the clip, silent until the throttle goes down,
-                // then playing once (not looping) from low speed
-                var flourish = player.GetComponent<AccelerationSfx>();
-                Check(flourish != null && flourish.enabled && flourish.clip != null && flourish.clip.name == "car acceleration", "acceleration flourish on the player car with the client's clip");
-                if (flourish != null && flourish.clip != null)
-                {
-                    Check(!flourish.IsPlaying && flourish.PlayCount == 0, "flourish silent before the throttle is touched");
-                    MobileInputManager.SwitchActiveInputMethod(MobileInputManager.ActiveInputMethod.Touch);
-                    MobileInputManager.SetAxis("Vertical", 1f);
-                    yield return new WaitForSeconds(0.3f);
-                    var fired = flourish.IsPlaying && flourish.PlayCount == 1;
-                    var flourishSource = player.GetComponents<AudioSource>().FirstOrDefault(s => s.clip == flourish.clip);
-                    Check(fired && flourishSource != null && !flourishSource.loop, "flourish plays once when the throttle goes down (" + flourish.PlayCount + " play, loop " + (flourishSource != null && flourishSource.loop) + ")");
-                    MobileInputManager.SetAxis("Vertical", 0f);
-                    yield return new WaitForSeconds(0.5f);
-                    Check(!flourish.IsPlaying, "flourish cut when the driver lifts");
-                    var bots = FindObjectsByType<AccelerationSfx>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(a => a != flourish).ToList();
-                    Check(bots.Count > 0 && bots.All(a => !a.enabled), "bots carry the component but keep it off (" + bots.Count + ")");
-#if !MOBILE_INPUT
-                    MobileInputManager.SwitchActiveInputMethod(MobileInputManager.ActiveInputMethod.Hardware);
-#endif
-                }
                 var exhaust = player.GetComponentInChildren<NitroExhaustFX>(true);
                 Check(exhaust != null && exhaust.igniteClip != null && exhaust.igniteClip.name == "Turbo", "nitro ignition uses Turbo");
                 var finishSeq = FindFirstObjectByType<RaceFinishSequence>(FindObjectsInactive.Include);

@@ -3,8 +3,8 @@ using UnityEngine;
 
 /// <summary>
 /// wires the client's sound files (feedback/Car racing music, copied to Audio/Client) into the game:
-///   car acceleration  a one-shot flourish when the car pulls away under throttle (AccelerationSfx
-///                     on the player car); the kit's four-channel engine loops stay as they are
+///   car acceleration  not wired: the client withdrew it (it was first the engine loop, then a
+///                     pull-away flourish); the file stays in the folder, the engine is the kit's own
 ///   Turbo             the nitro ignition (NitroExhaustFX), the running hiss stays procedural
 ///   Champion          the finish stinger (RaceFinishSequence)
 ///   Car passby        the car sweeping onto the menu stage (CarAudio.passbyClip, played by
@@ -22,11 +22,10 @@ namespace SpinMotion.EditorTools
         [MenuItem("Tools/Racing/Apply Client Sounds")]
         public static void Run()
         {
-            var acceleration = Clip("car acceleration.mp3");
             var turbo = Clip("Turbo.mp3");
             var champion = Clip("Champion.mp3");
             var passby = Clip("Car passby.mp3");
-            if (acceleration == null || turbo == null || champion == null || passby == null) return;
+            if (turbo == null || champion == null || passby == null) return;
 
             var cars = 0;
             foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { CarsFolder.TrimEnd('/') }))
@@ -48,17 +47,12 @@ namespace SpinMotion.EditorTools
                         nitro.loopClip = null;
                     }
 
-                    // on every car prefab; the component switches itself off on a bot at runtime
-                    var flourish = controller.GetComponent<AccelerationSfx>();
-                    if (flourish == null) flourish = controller.gameObject.AddComponent<AccelerationSfx>();
-                    flourish.clip = acceleration;
-
                     PrefabUtility.SaveAsPrefabAsset(root, path);
                     cars++;
                 }
                 finally { PrefabUtility.UnloadPrefabContents(root); }
             }
-            Debug.Log("[Sounds] acceleration flourish, nitro and passby clips set on " + cars + " car prefabs");
+            Debug.Log("[Sounds] nitro and passby clips set on " + cars + " car prefabs");
 
             var gui = PrefabUtility.LoadPrefabContents(GuiPrefab);
             try

@@ -423,7 +423,6 @@ GameObject:
   - component: {fileID: 965150167369196024}
   - component: {fileID: 6549784448457210430}
   - component: {fileID: 1278070413890401029}
-  - component: {fileID: 9057822828188547964}
   m_Layer: 0
   m_Name: Player Car 4
   m_TagString: Untagged
@@ -756,26 +755,6 @@ MonoBehaviour:
   releaseSteerAngle: 1
   yawDamping: 0.6
   trustedNormalAngle: 35
---- !u!114 &9057822828188547964
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4956954954255778322}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a3c5e9360c898db4bbdfed7b6b420840, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.AccelerationSfx
-  clip: {fileID: 8300000, guid: 5f5d2819d60ea1742be5d301cdde5334, type: 3}
-  volume: 0.8
-  triggerThrottle: 0.6
-  maxSpeedMph: 30
-  cooldown: 5
-  liftThrottle: 0.2
-  liftFade: 0.25
-  playerOnly: 1
 --- !u!1 &6608388820665456078
 GameObject:
   m_ObjectHideFlags: 0

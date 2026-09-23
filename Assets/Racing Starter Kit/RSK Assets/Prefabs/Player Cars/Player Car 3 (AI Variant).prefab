@@ -224,10 +224,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 44144872683691034}
-    - targetCorrespondingSourceObject: {fileID: 4956954954255778322, guid: cc69846c7fd9a0040a87344d827631cf,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7154575512635272495}
   m_SourcePrefab: {fileID: 100100000, guid: cc69846c7fd9a0040a87344d827631cf, type: 3}
 --- !u!54 &2658099400443347568 stripped
 Rigidbody:
@@ -358,23 +354,3 @@ MonoBehaviour:
   secondsBeforeRespawn: 7
   nudgeDuration: 1.2
   probeDistance: 25
---- !u!114 &7154575512635272495
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8170350698037997110}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a3c5e9360c898db4bbdfed7b6b420840, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.AccelerationSfx
-  clip: {fileID: 8300000, guid: 5f5d2819d60ea1742be5d301cdde5334, type: 3}
-  volume: 0.8
-  triggerThrottle: 0.6
-  maxSpeedMph: 30
-  cooldown: 5
-  liftThrottle: 0.2
-  liftFade: 0.25
-  playerOnly: 1
