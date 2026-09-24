@@ -212,6 +212,9 @@ namespace SpinMotion
             }
 
             Check(playerCar != null && playerCar.GetComponent<WallSlide>() != null, "player car has WallSlide");
+            // engine loops are 3D sources with Unity's attenuation, and bots out of earshot run none
+            var playerEngineSources = playerCar != null ? playerCar.GetComponents<AudioSource>().Where(s => s.loop && s.clip != null && s.clip.name.Contains("celeration")).ToList() : new List<AudioSource>();
+            Check(playerEngineSources.Count > 0 && playerEngineSources.All(s => s.spatialBlend >= 0.99f && s.maxDistance > 0f), "engine loops are 3D sources (" + playerEngineSources.Count + ", max distance " + (playerEngineSources.Count > 0 ? playerEngineSources[0].maxDistance.ToString("F0") : "-") + " m)");
             Check(playerCar != null && playerCar.GetComponent<Rigidbody>().collisionDetectionMode == CollisionDetectionMode.ContinuousDynamic, "player car uses continuous dynamic collision");
             var walls = FindObjectsByType<Collider>(FindObjectsSortMode.None).Where(b => b.name.StartsWith("Wall") && !b.isTrigger).ToList();
             Check(walls.Count == 0 || walls.All(w => w.sharedMaterial != null && w.sharedMaterial.dynamicFriction < 0.01f), walls.Count + " perimeter walls carry the frictionless material");
@@ -244,6 +247,26 @@ namespace SpinMotion
             var botsMoving = cars.Count(c => c != null && c.GetComponent<CarAIControl>() != null
                                              && c.GetComponent<Rigidbody>().linearVelocity.magnitude > 3f);
             Check(botsMoving >= 3, botsMoving + " bots moving a couple of seconds after GO");
+
+            // ---- a bot that finishes its laps: stops driving, ignores the other cars, then hides
+            var finishers = FindObjectsByType<AIFinishBehaviour>(FindObjectsSortMode.None).Where(f => f.enabled).ToList();
+            var finisherCars = finishers.Select(f => f.gameObject).Distinct().Count();
+            Check(finishers.Count == RaceData.AiBotsSelected && finisherCars == RaceData.AiBotsSelected,
+                  "every bot carries one AIFinishBehaviour, the player none (" + finishers.Count + " active on " + finisherCars + " cars)");
+            var finishedBot = finishers.FirstOrDefault();
+            if (finishedBot != null)
+            {
+                var botAi = finishedBot.GetComponent<CarAIControl>();
+                finishedBot.Finish();
+                yield return null;
+                Check(finishedBot.HasFinished && botAi != null && !botAi.enabled, "finished bot stops driving");
+                yield return new WaitForSeconds(finishedBot.hideAfterSeconds + 0.5f);
+                var finishedTracker = finishedBot.GetComponentInChildren<CheckpointTracker>(true);
+                var finishedMarker = miniMap != null && miniMap.mapArea != null && finishedTracker != null ? miniMap.mapArea.Find("Bot Marker " + finishedTracker.GetCarRacePositionIndex()) : null;
+                var botMarkerShown = finishedMarker != null && finishedMarker.gameObject.activeSelf;
+                Check(finishedBot.IsHidden && !finishedBot.gameObject.activeInHierarchy, "finished bot hidden " + finishedBot.hideAfterSeconds + " s later");
+                Check(!botMarkerShown, "hidden bot's minimap dot is hidden too");
+            }
 
             // ---- minimap, as drawn: sample the frame at each marker. the earlier checks only prove
             // the markers exist; this proves the pixels are there (skipped headless, no frame buffer)
@@ -294,8 +317,20 @@ namespace SpinMotion
                 Check(carAudio != null && carAudio.engineSoundStyle == CarAudio.EngineAudioOptions.FourChannel && engineClipName == "AccelerationHigh",
                       "engine keeps the kit's four-channel loops (" + engineClipName + ", " + (carAudio != null ? carAudio.engineSoundStyle.ToString() : "-") + ")");
                 Check(carAudio != null && carAudio.passbyClip != null && carAudio.passbyClip.name == "Car passby", "car carries the passby clip for the menu stage");
+                // the engine loops must be uncompressed: a compressed loop decoded in the browser
+                // carries codec padding at every loop boundary, heard as a gap under acceleration
+                var engineClips = carAudio != null ? new[] { carAudio.lowAccelClip, carAudio.lowDecelClip, carAudio.highAccelClip, carAudio.highDecelClip }.Where(c => c != null).ToList() : new List<AudioClip>();
+                Check(engineClips.Count == 4 && engineClips.All(c => c.loadType == AudioClipLoadType.DecompressOnLoad),
+                      "engine loops import uncompressed (decompress on load): " + string.Join(", ", engineClips.Select(c => c.name + "=" + c.loadType)));
                 var exhaust = player.GetComponentInChildren<NitroExhaustFX>(true);
-                Check(exhaust != null && exhaust.igniteClip != null && exhaust.igniteClip.name == "Turbo", "nitro ignition uses Turbo");
+                Check(exhaust != null && exhaust.igniteClip == null && exhaust.loopClip == null, "nitro has no clip assigned: synthesised ignition and hiss");
+                Check(exhaust != null && exhaust.volume <= 0.45f, "nitro volume turned down (" + (exhaust != null ? exhaust.volume.ToString("F2") : "-") + ")");
+                // the player's nitro is flat and always full; a bot's is 3D and only heard close by
+                var playerNitroSources = player.GetComponents<AudioSource>().Where(s => s.clip == null || s.clip.name.StartsWith("nitro")).Where(s => s.spatialBlend < 0.01f).Count();
+                Check(playerNitroSources >= 2, "player's nitro sources are 2D (" + playerNitroSources + ")");
+                var botExhaust = FindObjectsByType<NitroExhaustFX>(FindObjectsSortMode.None).FirstOrDefault(n => n.GetComponent<CarUserControl>() == null && n.gameObject.activeInHierarchy);
+                var botNitroSources = botExhaust != null ? botExhaust.GetComponents<AudioSource>().Where(s => s.spatialBlend > 0.99f && s.maxDistance <= botExhaust.packAudibleDistance + 0.01f && s.maxDistance <= 40f).Count() : 0;
+                Check(botExhaust != null && botNitroSources >= 2, "bots' nitro sources are 3D with a short reach (" + botNitroSources + " sources, " + (botExhaust != null ? botExhaust.packAudibleDistance.ToString("F0") : "-") + " m)");
                 var finishSeq = FindFirstObjectByType<RaceFinishSequence>(FindObjectsInactive.Include);
                 Check(finishSeq != null && finishSeq.fanfareClip != null && finishSeq.fanfareClip.name == "Champion", "finish stinger uses Champion");
             }
@@ -484,7 +519,7 @@ namespace SpinMotion
             }
 
             // ---- staged rear-end hit
-            var bot = cars.FirstOrDefault(c => c != null && c.GetComponent<CarAIControl>() != null);
+            var bot = cars.FirstOrDefault(c => c != null && c.gameObject.activeInHierarchy && c.GetComponent<CarAIControl>() != null);
             if (player != null && bot != null)
             {
                 var pBody = player.GetComponent<Rigidbody>();
@@ -559,6 +594,11 @@ namespace SpinMotion
             Check(Mathf.Approximately(Time.timeScale, 1f), "time scale restored (" + Time.timeScale.ToString("F2") + ")");
             yield return new WaitForSecondsRealtime(1.2f);
             Check(panel != null && panel.activeInHierarchy, "results panel shown after the sequence");
+            // the pack's engines are faded out under the results; the player's own keeps coasting
+            var packAudio = FindObjectsByType<CarAudio>(FindObjectsSortMode.None).Where(a => a.GetComponent<CarUserControl>() == null).ToList();
+            var packLoud = packAudio.SelectMany(a => a.GetComponents<AudioSource>()).Where(s => s.loop && s.isPlaying && s.volume > 0.01f).Count();
+            Check(packAudio.Count > 0 && packAudio.All(a => a.EngineGain <= 0.001f) && packLoud == 0,
+                  "pack engines silent under the results (" + packAudio.Count + " bots, gain " + (packAudio.Count > 0 ? packAudio.Max(a => a.EngineGain).ToString("F2") : "-") + ", " + packLoud + " loops still audible)");
             var thryl = ThrylClient.Instance;
             var manager = FindFirstObjectByType<RaceManager>();
             var racePositions = FindFirstObjectByType<RealTimeRacePositions>();
@@ -575,6 +615,11 @@ namespace SpinMotion
             yield return null;
             yield return new WaitForFixedUpdate();
             Check(!CarUserControl.InputLocked, "input unlocked on restart");
+            var packAfterRestart = FindObjectsByType<CarAudio>(FindObjectsSortMode.None).Where(a => a.GetComponent<CarUserControl>() == null).ToList();
+            Check(packAfterRestart.Count > 0 && packAfterRestart.All(a => a.EngineGain >= 0.999f), "pack engines back on for the restart");
+            var hiddenBots = FindObjectsByType<AIFinishBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(f => f.IsHidden || f.HasFinished).ToList();
+            var botsBack = FindObjectsByType<AIFinishBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(f => f.gameObject.activeInHierarchy && f.GetComponent<CarUserControl>() == null && f.GetComponent<CarAIControl>() != null && f.GetComponent<CarAIControl>().enabled).Select(f => f.gameObject).Distinct().Count();
+            Check(hiddenBots.Count == 0 && botsBack == RaceData.AiBotsSelected, "finished bot back on the grid and driving after restart (" + botsBack + " bots driving, " + hiddenBots.Count + " still finished)");
             Check(Mathf.Approximately(Time.timeScale, 1f), "time scale 1 on restart");
             Check(banner != null && !banner.activeInHierarchy, "banner hidden on restart");
             var rise2 = 0f;

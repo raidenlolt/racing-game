@@ -41,6 +41,28 @@ namespace SpinMotion.EditorTools
             EditorApplication.EnterPlaymode();
         }
 
+        /// <summary>engine sound check on the open track: full throttle from the grid, listening for gaps</summary>
+        [MenuItem("Tools/Racing/Run Engine Sound Test In Editor")]
+        public static void RunEngineTestHere()
+        {
+            if (File.Exists(EngineSoundTest.ReportPath)) File.Delete(EngineSoundTest.ReportPath);
+            File.WriteAllText(EngineSoundTest.FlagPath, "1");
+            EditorApplication.EnterPlaymode();
+        }
+
+        /// <summary>batch entry for the engine sound test: -executeMethod ...SmokeTestLauncher.RunEngineTest -scene <path></summary>
+        public static void RunEngineTest()
+        {
+            var args = Environment.GetCommandLineArgs();
+            var index = Array.IndexOf(args, "-scene");
+            var scene = index >= 0 && index + 1 < args.Length ? args[index + 1]
+                                                                : "Assets/Racing_Track_Pack/Scenes/Race_Track_01.unity";
+            if (File.Exists(EngineSoundTest.ReportPath)) File.Delete(EngineSoundTest.ReportPath);
+            EditorSceneManager.OpenScene(scene, OpenSceneMode.Single);
+            File.WriteAllText(EngineSoundTest.FlagPath, "1");
+            EditorApplication.EnterPlaymode();
+        }
+
         /// <summary>
         /// batch entry for the lap count test:
         ///   -executeMethod SpinMotion.EditorTools.SmokeTestLauncher.RunLapTest -scene <path> [-laps N]
@@ -83,7 +105,7 @@ namespace SpinMotion.EditorTools
         [InitializeOnLoadMethod]
         private static void ArmTimeout()
         {
-            if (!Application.isBatchMode || !(File.Exists(FlagPath) || File.Exists(LapCountTest.FlagPath))) return;
+            if (!Application.isBatchMode || !(File.Exists(FlagPath) || File.Exists(LapCountTest.FlagPath) || File.Exists(EngineSoundTest.FlagPath))) return;
             var deadline = EditorApplication.timeSinceStartup + 240.0;
             EditorApplication.update += () =>
             {

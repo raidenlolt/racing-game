@@ -181,9 +181,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5066166911959946407, guid: cc69846c7fd9a0040a87344d827631cf,
         type: 3}
+      propertyPath: volume
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5066166911959946407, guid: cc69846c7fd9a0040a87344d827631cf,
+        type: 3}
       propertyPath: igniteClip
       value: 
-      objectReference: {fileID: 8300000, guid: 7933a0c0d466f1f45b01deb2f80dc15a, type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 6732008047634597610, guid: cc69846c7fd9a0040a87344d827631cf,
         type: 3}
       propertyPath: isPlayer

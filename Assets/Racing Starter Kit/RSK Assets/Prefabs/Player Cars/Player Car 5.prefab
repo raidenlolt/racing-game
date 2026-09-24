@@ -377,6 +377,7 @@ GameObject:
   - component: {fileID: 2276434218438253725}
   - component: {fileID: 4827961227560869337}
   - component: {fileID: 6397393743282755795}
+  - component: {fileID: 7537368099579170664}
   m_Layer: 0
   m_Name: Player Car 5
   m_TagString: Untagged
@@ -682,11 +683,13 @@ MonoBehaviour:
   levelOneColor: {r: 0.45, g: 0.75, b: 1, a: 1}
   levelTwoColor: {r: 1, g: 0.62, b: 0.2, a: 1}
   levelThreeColor: {r: 1, g: 0.35, b: 0.12, a: 1}
-  igniteClip: {fileID: 8300000, guid: 7933a0c0d466f1f45b01deb2f80dc15a, type: 3}
+  igniteClip: {fileID: 0}
   loopClip: {fileID: 0}
-  volume: 0.7
+  volume: 0.4
   basePitch: 0.95
   pitchPerLevel: 0.14
+  packFullDistance: 8
+  packAudibleDistance: 30
 --- !u!114 &6397393743282755795
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -709,6 +712,20 @@ MonoBehaviour:
   releaseSteerAngle: 1
   yawDamping: 0.6
   trustedNormalAngle: 35
+--- !u!114 &7537368099579170664
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4981085146334484045}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 063eff550e3e1324796786efa5de4b65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpinMotion.AIFinishBehaviour
+  hideAfterSeconds: 2.5
+  stoppedSpeed: 2
 --- !u!1 &5781497571323489836
 GameObject:
   m_ObjectHideFlags: 0

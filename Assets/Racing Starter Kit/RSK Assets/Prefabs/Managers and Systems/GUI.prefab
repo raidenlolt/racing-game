@@ -454,6 +454,7 @@ MonoBehaviour:
   skippableAfter: 0.9
   fanfareClip: {fileID: 8300000, guid: 9272a79dac96a7f4ca407217fae6d3e8, type: 3}
   fanfareVolume: 0.8
+  packFadeOutSeconds: 1.5
 --- !u!114 &1595536061564490579
 MonoBehaviour:
   m_ObjectHideFlags: 0

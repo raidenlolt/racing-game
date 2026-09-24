@@ -13,11 +13,15 @@ namespace SpinMotion
         public RealTimeRacePositionsItem realTimeRacePositions;
 
         private int carRacePositionIndex;
-        
+
         public void SetCarRacePositionIndex(int carRacePositionIndex)
         {
             this.carRacePositionIndex = carRacePositionIndex;
         }
+
+        /// <summary>this car has crossed the line after its last lap; raised once per race</summary>
+        public event System.Action Finished;
+        public bool HasFinished { get; private set; }
         public int GetCarRacePositionIndex() { return carRacePositionIndex; }
 
         private int currentCheckpoint;
@@ -32,6 +36,7 @@ namespace SpinMotion
         {
             currentCheckpoint = 0;
             nextCheckpoint = 1;
+            HasFinished = false;
         }
 
         private void OnTriggerEnter(Collider other)
@@ -78,6 +83,14 @@ namespace SpinMotion
                     if (carRacePositionIndex == 0)//if trigchk it's located in player 1
                     {
                         gameEvents.LapCompletedEvent.Invoke();
+                    }
+                    // the lap counter counts the crossing at the flag as lap 1, so the race is done
+                    // one past the selected count. RaceFinish handles the player; bots listen here
+                    if (!HasFinished && realTimeRacePositions.Item.LapScores[carRacePositionIndex] > RaceData.LapsSelected)
+                    {
+                        HasFinished = true;
+                        var handler = Finished;
+                        if (handler != null) handler();
                     }
                 }
             }

@@ -31,10 +31,15 @@ namespace SpinMotion
         [Tooltip("Leave empty to use the synthesised stand-ins")]
         public AudioClip igniteClip;
         public AudioClip loopClip;
-        [Range(0f, 1f)] public float volume = 0.7f;
+        [Tooltip("Ignition and hiss level. 0.7 was too loud against the engine; the client asked for less.")]
+        [Range(0f, 1f)] public float volume = 0.4f;
         [Tooltip("Loop pitch at level one; rises a step per level")]
         public float basePitch = 0.95f;
         public float pitchPerLevel = 0.14f;
+        [Tooltip("Another car's nitro is at full volume this close (m) ...")]
+        public float packFullDistance = 8f;
+        [Tooltip("... and silent from this far (m). The player's own nitro is not attenuated at all.")]
+        public float packAudibleDistance = 30f;
 
         private NitroSystem nitro;
         private ParticleSystem[] flames;
@@ -60,25 +65,38 @@ namespace SpinMotion
             if (flamePrefab != null) baseFlameSize = flamePrefab.main.startSize.constantMax;
             if (streakPrefab != null) baseStreakSize = streakPrefab.main.startSize.constantMax;
 
+            // the player's own nitro is heard flat, always at full volume: the camera sits well
+            // behind the car and a distance curve would only make the player's boost sound distant.
+            // another car's nitro is a 3D source with a short reach, so it is only heard when that
+            // car is right alongside, not from across the circuit
+            var isPlayer = GetComponent<CarUserControl>() != null;
+
             loopSource = gameObject.AddComponent<AudioSource>();
             loopSource.playOnAwake = false;
             loopSource.loop = true;
-            loopSource.spatialBlend = 1f;
-            loopSource.rolloffMode = AudioRolloffMode.Linear;
-            loopSource.minDistance = 6f;
-            loopSource.maxDistance = 80f;
             loopSource.dopplerLevel = 0f;
             loopSource.volume = 0f;
+            Spatialise(loopSource, isPlayer);
 
             oneShotSource = gameObject.AddComponent<AudioSource>();
             oneShotSource.playOnAwake = false;
-            oneShotSource.spatialBlend = 1f;
-            oneShotSource.rolloffMode = AudioRolloffMode.Linear;
-            oneShotSource.minDistance = 6f;
-            oneShotSource.maxDistance = 80f;
             oneShotSource.dopplerLevel = 0f;
+            Spatialise(oneShotSource, isPlayer);
 
             ApplyLevel(NitroLevel.None);
+        }
+
+        private void Spatialise(AudioSource source, bool isPlayer)
+        {
+            if (isPlayer)
+            {
+                source.spatialBlend = 0f;
+                return;
+            }
+            source.spatialBlend = 1f;
+            source.rolloffMode = AudioRolloffMode.Linear;
+            source.minDistance = Mathf.Max(0.1f, packFullDistance);
+            source.maxDistance = Mathf.Max(source.minDistance + 0.1f, packAudibleDistance);
         }
 
         private ParticleSystem Spawn(ParticleSystem prefab, Vector3 offset, string label)

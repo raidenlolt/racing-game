@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 /// <summary>
@@ -29,6 +30,23 @@ namespace SpinMotion
         public float dopplerLevel = 1;
         public bool useDoppler = true;
 
+        /// <summary>
+        /// master gain on the engine, 0..1. RaceFinishSequence fades the pack out with it when the
+        /// race ends so the bots do not sit revving under the results panel, and back in on restart
+        /// </summary>
+        public float EngineGain { get { return gain; } }
+        private float gain = 1f;
+        private float gainTarget = 1f;
+        private float gainPerSecond = 0f;
+
+        /// <summary>eases the engine to a gain over a number of seconds (0 for at once)</summary>
+        public void FadeEngine(float target, float seconds)
+        {
+            gainTarget = Mathf.Clamp01(target);
+            if (seconds <= 0f) { gain = gainTarget; gainPerSecond = 0f; }
+            else gainPerSecond = Mathf.Abs(gainTarget - gain) / seconds;
+        }
+
         private AudioSource m_LowAccel;
         private AudioSource m_LowDecel;
         private AudioSource m_HighAccel;
@@ -53,16 +71,36 @@ namespace SpinMotion
 
         private void Update()
         {
-            float camDist = 0f;
-            if (Camera.main != null)
-                camDist = (Camera.main.transform.position - transform.position).sqrMagnitude;
-
-            float volumeFactor = Mathf.Clamp01(1 - (camDist / (maxRolloffDistance * maxRolloffDistance)));
-
             if (!m_StartedSound)
             {
                 StartSound();
             }
+
+            if (gainPerSecond > 0f && !Mathf.Approximately(gain, gainTarget))
+            {
+                gain = Mathf.MoveTowards(gain, gainTarget, gainPerSecond * Time.unscaledDeltaTime);
+                if (Mathf.Approximately(gain, gainTarget)) gainPerSecond = 0f;
+            }
+
+            // the sources are 3D, so distance is Unity's job; what is left here is stopping the loops
+            // outright on a car the listener cannot hear at all, instead of running them at zero.
+            // seven cars with four loops each were 28 voices, most of them silent
+            float camDist = 0f;
+            if (Camera.main != null)
+                camDist = (Camera.main.transform.position - transform.position).sqrMagnitude;
+            var audible = camDist <= maxRolloffDistance * maxRolloffDistance && gain > 0f;
+            if (audible != sourcesRunning)
+            {
+                sourcesRunning = audible;
+                foreach (var source in Sources())
+                {
+                    if (audible) source.UnPause();
+                    else source.Pause();
+                }
+            }
+            if (!audible) return;
+
+            float volumeFactor = gain;
 
             if (m_StartedSound)
             {
@@ -106,6 +144,16 @@ namespace SpinMotion
             }
         }
 
+        private bool sourcesRunning = true;
+
+        private IEnumerable<AudioSource> Sources()
+        {
+            if (m_HighAccel != null) yield return m_HighAccel;
+            if (m_LowAccel != null) yield return m_LowAccel;
+            if (m_LowDecel != null) yield return m_LowDecel;
+            if (m_HighDecel != null) yield return m_HighDecel;
+        }
+
         private AudioSource SetUpEngineAudioSource(AudioClip clip)
         {
             AudioSource source = gameObject.AddComponent<AudioSource>();
@@ -114,6 +162,10 @@ namespace SpinMotion
             source.loop = true;
             source.time = Random.Range(0f, clip.length);
             source.Play();
+            // a real 3D source: full up to minDistance, silent at maxRolloffDistance, so Unity's
+            // own attenuation and voice management handle the pack instead of a hand-rolled fade
+            source.spatialBlend = 1f;
+            source.rolloffMode = AudioRolloffMode.Linear;
             source.minDistance = 5;
             source.maxDistance = maxRolloffDistance;
             source.dopplerLevel = 0;

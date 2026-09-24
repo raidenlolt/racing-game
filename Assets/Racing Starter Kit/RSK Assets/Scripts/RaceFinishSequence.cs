@@ -67,6 +67,7 @@ namespace SpinMotion
             if (gameEvents == null) return;
             gameEvents.RaceFinishedEvent.AddListener(OnRaceFinished);
             gameEvents.RestartRaceEvent.AddListener(OnRestartRace);
+            gameEvents.RaceStartedEvent.AddListener(OnRaceStarted);
         }
 
         private void OnDestroy()
@@ -76,12 +77,30 @@ namespace SpinMotion
             if (gameEvents == null) return;
             gameEvents.RaceFinishedEvent.RemoveListener(OnRaceFinished);
             gameEvents.RestartRaceEvent.RemoveListener(OnRestartRace);
+            gameEvents.RaceStartedEvent.RemoveListener(OnRaceStarted);
         }
+
+        [Header("Pack engines")]
+        [Tooltip("Seconds the bots' engines take to fade out once the race is over, so they are not revving under the results")]
+        public float packFadeOutSeconds = 1.5f;
 
         private void OnRaceFinished(RaceFinishType type)
         {
             if (sequence != null) StopCoroutine(sequence);
             sequence = StartCoroutine(Sequence(type));
+            FadePack(0f, packFadeOutSeconds);
+        }
+
+        private void OnRaceStarted()
+        {
+            FadePack(1f, 0f);
+        }
+
+        /// <summary>every engine but the player's; the player's own car is left to coast to its stop</summary>
+        private void FadePack(float gain, float seconds)
+        {
+            foreach (var audio in FindObjectsByType<CarAudio>(FindObjectsSortMode.None))
+                if (audio.GetComponent<CarUserControl>() == null) audio.FadeEngine(gain, seconds);
         }
 
         private void OnRestartRace()
@@ -90,6 +109,7 @@ namespace SpinMotion
             sequence = null;
             RestoreTime();
             CarUserControl.InputLocked = false;
+            FadePack(1f, 0f);
             if (bannerRoot != null) bannerRoot.SetActive(false);
         }
 

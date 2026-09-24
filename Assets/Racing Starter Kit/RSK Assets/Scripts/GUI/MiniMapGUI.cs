@@ -228,6 +228,10 @@ namespace SpinMotion
             {
                 var car = cars[i];
                 if (car == null) continue;
+                // a finished bot is hidden; its dot goes with it
+                var shown = car.gameObject.activeInHierarchy;
+                if (markers[i].gameObject.activeSelf != shown) markers[i].gameObject.SetActive(shown);
+                if (!shown) continue;
                 var p = car.position;
                 markers[i].anchoredPosition = ToMap(new Vector2(p.x, p.z));
                 if (i == 0)

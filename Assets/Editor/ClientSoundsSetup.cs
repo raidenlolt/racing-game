@@ -5,7 +5,8 @@ using UnityEngine;
 /// wires the client's sound files (feedback/Car racing music, copied to Audio/Client) into the game:
 ///   car acceleration  not wired: the client withdrew it (it was first the engine loop, then a
 ///                     pull-away flourish); the file stays in the folder, the engine is the kit's own
-///   Turbo             the nitro ignition (NitroExhaustFX), the running hiss stays procedural
+///   Turbo             not wired either (withdrawn 2026-09-24): the nitro keeps its synthesised
+///                     ignition and hiss; the file stays in the folder
 ///   Champion          the finish stinger (RaceFinishSequence)
 ///   Car passby        the car sweeping onto the menu stage (CarAudio.passbyClip, played by
 ///                     MenuCarShowcase)
@@ -22,10 +23,9 @@ namespace SpinMotion.EditorTools
         [MenuItem("Tools/Racing/Apply Client Sounds")]
         public static void Run()
         {
-            var turbo = Clip("Turbo.mp3");
             var champion = Clip("Champion.mp3");
             var passby = Clip("Car passby.mp3");
-            if (turbo == null || champion == null || passby == null) return;
+            if (champion == null || passby == null) return;
 
             var cars = 0;
             foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { CarsFolder.TrimEnd('/') }))
@@ -40,11 +40,13 @@ namespace SpinMotion.EditorTools
                     var audio = root.GetComponentInChildren<CarAudio>(true);
                     if (audio != null) audio.passbyClip = passby;
 
+                    // nitro: no clips, the procedural ignition and hiss are what plays
                     var nitro = root.GetComponentInChildren<NitroExhaustFX>(true);
                     if (nitro != null)
                     {
-                        nitro.igniteClip = turbo;
+                        nitro.igniteClip = null;
                         nitro.loopClip = null;
+                        nitro.volume = 0.4f;   // client: the nitro was too loud
                     }
 
                     PrefabUtility.SaveAsPrefabAsset(root, path);
@@ -52,7 +54,7 @@ namespace SpinMotion.EditorTools
                 }
                 finally { PrefabUtility.UnloadPrefabContents(root); }
             }
-            Debug.Log("[Sounds] nitro and passby clips set on " + cars + " car prefabs");
+            Debug.Log("[Sounds] passby clip set, nitro clips cleared and nitro volume 0.4 on " + cars + " car prefabs");
 
             var gui = PrefabUtility.LoadPrefabContents(GuiPrefab);
             try
