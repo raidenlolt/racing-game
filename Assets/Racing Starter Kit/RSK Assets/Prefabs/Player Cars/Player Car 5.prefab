@@ -654,7 +654,7 @@ MonoBehaviour:
   lightHitClip: {fileID: 0}
   mediumHitClip: {fileID: 0}
   heavyHitClip: {fileID: 0}
-  volume: 0.8
+  volume: 0.64
   hitStopTimeScale: 0.7
   hitStopSeconds: 0.08
   vibrateOnHardHit: 1
@@ -685,7 +685,7 @@ MonoBehaviour:
   levelThreeColor: {r: 1, g: 0.35, b: 0.12, a: 1}
   igniteClip: {fileID: 0}
   loopClip: {fileID: 0}
-  volume: 0.4
+  volume: 0.2
   basePitch: 0.95
   pitchPerLevel: 0.14
   packFullDistance: 8

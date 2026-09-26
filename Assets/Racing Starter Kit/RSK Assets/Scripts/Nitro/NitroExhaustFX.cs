@@ -31,8 +31,8 @@ namespace SpinMotion
         [Tooltip("Leave empty to use the synthesised stand-ins")]
         public AudioClip igniteClip;
         public AudioClip loopClip;
-        [Tooltip("Ignition and hiss level. 0.7 was too loud against the engine; the client asked for less.")]
-        [Range(0f, 1f)] public float volume = 0.4f;
+        [Tooltip("Ignition and hiss level. 0.7 originally; the client asked for less twice, to 0.4 and then half of that.")]
+        [Range(0f, 1f)] public float volume = 0.2f;
         [Tooltip("Loop pitch at level one; rises a step per level")]
         public float basePitch = 0.95f;
         public float pitchPerLevel = 0.14f;

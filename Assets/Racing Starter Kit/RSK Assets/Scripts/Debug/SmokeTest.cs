@@ -324,7 +324,9 @@ namespace SpinMotion
                       "engine loops import uncompressed (decompress on load): " + string.Join(", ", engineClips.Select(c => c.name + "=" + c.loadType)));
                 var exhaust = player.GetComponentInChildren<NitroExhaustFX>(true);
                 Check(exhaust != null && exhaust.igniteClip == null && exhaust.loopClip == null, "nitro has no clip assigned: synthesised ignition and hiss");
-                Check(exhaust != null && exhaust.volume <= 0.45f, "nitro volume turned down (" + (exhaust != null ? exhaust.volume.ToString("F2") : "-") + ")");
+                Check(exhaust != null && exhaust.volume <= 0.25f, "nitro volume turned down to a fifth (" + (exhaust != null ? exhaust.volume.ToString("F2") : "-") + ")");
+                var impactFx = player.GetComponent<CarImpactFX>();
+                Check(impactFx != null && impactFx.volume <= 0.65f, "hit sound volume turned down 20 percent (" + (impactFx != null ? impactFx.volume.ToString("F2") : "-") + ")");
                 // the player's nitro is flat and always full; a bot's is 3D and only heard close by
                 var playerNitroSources = player.GetComponents<AudioSource>().Where(s => s.clip == null || s.clip.name.StartsWith("nitro")).Where(s => s.spatialBlend < 0.01f).Count();
                 Check(playerNitroSources >= 2, "player's nitro sources are 2D (" + playerNitroSources + ")");

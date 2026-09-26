@@ -46,15 +46,19 @@ namespace SpinMotion.EditorTools
                     {
                         nitro.igniteClip = null;
                         nitro.loopClip = null;
-                        nitro.volume = 0.4f;   // client: the nitro was too loud
+                        nitro.volume = 0.2f;   // client: too loud at 0.7, then at 0.4
                     }
+
+                    // impacts: the client asked for 20 percent less than the 0.8 they had
+                    var impact = root.GetComponentInChildren<CarImpactFX>(true);
+                    if (impact != null) impact.volume = 0.64f;
 
                     PrefabUtility.SaveAsPrefabAsset(root, path);
                     cars++;
                 }
                 finally { PrefabUtility.UnloadPrefabContents(root); }
             }
-            Debug.Log("[Sounds] passby clip set, nitro clips cleared and nitro volume 0.4 on " + cars + " car prefabs");
+            Debug.Log("[Sounds] passby clip set, nitro clips cleared, nitro volume 0.2 and hit volume 0.64 on " + cars + " car prefabs");
 
             var gui = PrefabUtility.LoadPrefabContents(GuiPrefab);
             try

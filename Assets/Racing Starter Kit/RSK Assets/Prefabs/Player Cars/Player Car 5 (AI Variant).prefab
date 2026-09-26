@@ -114,6 +114,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2276434218438253725, guid: dec391ad46ef3344faf616342a8cace2,
+        type: 3}
+      propertyPath: volume
+      value: 0.64
+      objectReference: {fileID: 0}
     - target: {fileID: 4029683357015044288, guid: dec391ad46ef3344faf616342a8cace2,
         type: 3}
       propertyPath: passbyClip
@@ -122,7 +127,7 @@ PrefabInstance:
     - target: {fileID: 4827961227560869337, guid: dec391ad46ef3344faf616342a8cace2,
         type: 3}
       propertyPath: volume
-      value: 0.4
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 4827961227560869337, guid: dec391ad46ef3344faf616342a8cace2,
         type: 3}

@@ -50,7 +50,8 @@ namespace SpinMotion
         public AudioClip lightHitClip;
         public AudioClip mediumHitClip;
         public AudioClip heavyHitClip;
-        [Range(0f, 1f)] public float volume = 0.8f;
+        [Tooltip("Hit sound level. 0.8 originally; the client asked for 20 percent less.")]
+        [Range(0f, 1f)] public float volume = 0.64f;
 
         [Header("Player only")]
         [Tooltip("Time scale during the hit-stop on a hard hit")]
